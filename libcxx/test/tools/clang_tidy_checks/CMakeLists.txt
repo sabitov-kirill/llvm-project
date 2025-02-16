@@ -96,6 +96,7 @@ set(SOURCES
     proper_version_checks.cpp
     qualify_declval.cpp
     robust_against_adl.cpp
+    robust_against_operator_ampersand.cpp
     uglify_attributes.cpp
 
     libcpp_module.cpp
