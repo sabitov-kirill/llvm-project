@@ -614,27 +614,6 @@ void AMDGPUTargetCodeGenInfo::setCUDAKernelCallingConvention(
       FT, FT->getExtInfo().withCallingConv(CC_OpenCLKernel));
 }
 
-/// Return IR struct type corresponding to kernel_descriptor_t (See
-/// AMDHSAKernelDescriptor.h)
-static llvm::StructType *getAMDGPUKernelDescriptorType(CodeGenFunction &CGF) {
-  return llvm::StructType::create(
-      CGF.getLLVMContext(),
-      {
-          CGF.Int32Ty,                          // group_segment_fixed_size
-          CGF.Int32Ty,                          // private_segment_fixed_size
-          CGF.Int32Ty,                          // kernarg_size
-          llvm::ArrayType::get(CGF.Int8Ty, 4),  // reserved0
-          CGF.Int64Ty,                          // kernel_code_entry_byte_offset
-          llvm::ArrayType::get(CGF.Int8Ty, 20), // reserved1
-          CGF.Int32Ty,                          // compute_pgm_rsrc3
-          CGF.Int32Ty,                          // compute_pgm_rsrc1
-          CGF.Int32Ty,                          // compute_pgm_rsrc2
-          CGF.Int16Ty,                          // kernel_code_properties
-          llvm::ArrayType::get(CGF.Int8Ty, 6)   // reserved2
-      },
-      "kernel_descriptor_t");
-}
-
 /// Return IR struct type for rtinfo struct in rocm-device-libs used for device
 /// enqueue.
 ///
@@ -733,9 +712,8 @@ llvm::Value *AMDGPUTargetCodeGenInfo::createEnqueuedBlockKernel(
   if (CGF.CGM.getCodeGenOpts().EmitOpenCLArgMetadata)
     F->setMetadata("kernel_arg_name", llvm::MDNode::get(C, ArgNames));
 
-  llvm::Type *KernelDescriptorTy = getAMDGPUKernelDescriptorType(CGF);
   llvm::StructType *HandleTy = getAMDGPURuntimeHandleType(
-      C, KernelDescriptorTy->getPointerTo(DL.getDefaultGlobalsAddressSpace()));
+      C, llvm::PointerType::get(C, DL.getDefaultGlobalsAddressSpace()));
   llvm::Constant *RuntimeHandleInitializer =
       llvm::ConstantAggregateZero::get(HandleTy);
 
