@@ -2,7 +2,7 @@
 // RUN: %clang_cc1 -cl-std=CL2.0 -O0 -disable-llvm-passes -fno-ident -emit-llvm -o - -triple amdgcn-amd-amdhsa %s -fdenormal-fp-math-f32=preserve-sign | FileCheck %s --check-prefixes=CHECK,NOCPU
 
 // // Check no-optnone and target-cpu behavior
-// RUN: %clang_cc1 -cl-std=CL2.0 -O1 -disable-llvm-passes -fno-ident -emit-llvm -o - -triple amdgcn-amd-amdhsa -target-cpu gfx900 -target-feature -sram-ecc -fdenormal-fp-math-f32=preserve-sign %s | FileCheck %s --check-prefixes=CHECK,GFX900
+// RUN: %clang_cc1 -cl-std=CL2.0 -O1 -disable-llvm-passes -fno-ident -emit-llvm -o - -triple amdgcn-amd-amdhsa -target-cpu gfx908 -target-feature +xnack -fdenormal-fp-math-f32=preserve-sign %s | FileCheck %s --check-prefixes=CHECK,GFX900
 
 
 typedef struct {int a;} ndrange_t;
@@ -62,11 +62,11 @@ kernel void test_target_features_kernel(global int *i) {
 
 //.
 // CHECK: @__test_block_invoke_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t zeroinitializer, section ".amdgpu.kernel.runtime.handle"
-// CHECK: @__test_block_invoke_2_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.1 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
-// CHECK: @__test_block_invoke_3_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.3 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
-// CHECK: @__test_block_invoke_4_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.5 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
+// CHECK: @__test_block_invoke_2_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.0 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
+// CHECK: @__test_block_invoke_3_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.1 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
+// CHECK: @__test_block_invoke_4_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.2 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
 // CHECK: @__block_literal_global = internal addrspace(1) constant { i32, i32, ptr } { i32 16, i32 8, ptr @__test_target_features_kernel_block_invoke }, align 8 #0
-// CHECK: @__test_target_features_kernel_block_invoke_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.7 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
+// CHECK: @__test_target_features_kernel_block_invoke_kernel.runtime.handle = internal addrspace(1) externally_initialized constant %block.runtime.handle.t.3 zeroinitializer, section ".amdgpu.kernel.runtime.handle"
 // CHECK: @llvm.used = appending addrspace(1) global [10 x ptr] [ptr @__test_block_invoke_kernel, ptr addrspacecast (ptr addrspace(1) @__test_block_invoke_kernel.runtime.handle to ptr), ptr @__test_block_invoke_2_kernel, ptr addrspacecast (ptr addrspace(1) @__test_block_invoke_2_kernel.runtime.handle to ptr), ptr @__test_block_invoke_3_kernel, ptr addrspacecast (ptr addrspace(1) @__test_block_invoke_3_kernel.runtime.handle to ptr), ptr @__test_block_invoke_4_kernel, ptr addrspacecast (ptr addrspace(1) @__test_block_invoke_4_kernel.runtime.handle to ptr), ptr @__test_target_features_kernel_block_invoke_kernel, ptr addrspacecast (ptr addrspace(1) @__test_target_features_kernel_block_invoke_kernel.runtime.handle to ptr)], section "llvm.metadata"
 // CHECK: @__oclc_ABI_version = weak_odr hidden local_unnamed_addr addrspace(4) constant i32 500
 //.
@@ -755,11 +755,11 @@ kernel void test_target_features_kernel(global int *i) {
 // NOCPU: attributes #[[ATTR8]] = { convergent nounwind }
 //.
 // GFX900: attributes #[[ATTR0:[0-9]+]] = { "objc_arc_inert" }
-// GFX900: attributes #[[ATTR1]] = { convergent norecurse nounwind "denormal-fp-math-f32"="preserve-sign,preserve-sign" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="gfx900" "target-features"="+16-bit-insts,+ci-insts,+dpp,+gfx8-insts,+gfx9-insts,+s-memrealtime,+s-memtime-inst,+wavefrontsize64,-sram-ecc" }
-// GFX900: attributes #[[ATTR2]] = { convergent norecurse nounwind "amdgpu-flat-work-group-size"="1,256" "denormal-fp-math-f32"="preserve-sign,preserve-sign" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="gfx900" "target-features"="+16-bit-insts,+ci-insts,+dpp,+gfx8-insts,+gfx9-insts,+s-memrealtime,+s-memtime-inst,+wavefrontsize64,-sram-ecc" "uniform-work-group-size"="false" }
+// GFX900: attributes #[[ATTR1]] = { convergent norecurse nounwind "denormal-fp-math-f32"="preserve-sign,preserve-sign" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="gfx908" "target-features"="+16-bit-insts,+ci-insts,+dl-insts,+dot1-insts,+dot10-insts,+dot2-insts,+dot3-insts,+dot4-insts,+dot5-insts,+dot6-insts,+dot7-insts,+dpp,+gfx8-insts,+gfx9-insts,+mai-insts,+s-memrealtime,+s-memtime-inst,+wavefrontsize64,+xnack" }
+// GFX900: attributes #[[ATTR2]] = { convergent norecurse nounwind "amdgpu-flat-work-group-size"="1,256" "denormal-fp-math-f32"="preserve-sign,preserve-sign" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="gfx908" "target-features"="+16-bit-insts,+ci-insts,+dl-insts,+dot1-insts,+dot10-insts,+dot2-insts,+dot3-insts,+dot4-insts,+dot5-insts,+dot6-insts,+dot7-insts,+dpp,+gfx8-insts,+gfx9-insts,+mai-insts,+s-memrealtime,+s-memtime-inst,+wavefrontsize64,+xnack" "uniform-work-group-size"="false" }
 // GFX900: attributes #[[ATTR3:[0-9]+]] = { nocallback nofree nosync nounwind willreturn memory(argmem: readwrite) }
 // GFX900: attributes #[[ATTR4:[0-9]+]] = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
-// GFX900: attributes #[[ATTR5]] = { convergent nounwind "denormal-fp-math-f32"="preserve-sign,preserve-sign" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="gfx900" "target-features"="+16-bit-insts,+ci-insts,+dpp,+gfx8-insts,+gfx9-insts,+s-memrealtime,+s-memtime-inst,+wavefrontsize64,-sram-ecc" }
+// GFX900: attributes #[[ATTR5]] = { convergent nounwind "denormal-fp-math-f32"="preserve-sign,preserve-sign" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="gfx908" "target-features"="+16-bit-insts,+ci-insts,+dl-insts,+dot1-insts,+dot10-insts,+dot2-insts,+dot3-insts,+dot4-insts,+dot5-insts,+dot6-insts,+dot7-insts,+dpp,+gfx8-insts,+gfx9-insts,+mai-insts,+s-memrealtime,+s-memtime-inst,+wavefrontsize64,+xnack" }
 // GFX900: attributes #[[ATTR6:[0-9]+]] = { nocallback nofree nosync nounwind willreturn }
 // GFX900: attributes #[[ATTR7]] = { nounwind }
 // GFX900: attributes #[[ATTR8]] = { convergent nounwind }
