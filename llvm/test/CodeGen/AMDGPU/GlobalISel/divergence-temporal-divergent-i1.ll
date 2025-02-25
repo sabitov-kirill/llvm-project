@@ -186,3 +186,275 @@ exit:
   ret void
 }
 
+; Temporal divergence i1 across inner and outer nested loops
+define void @nested_loops_temporal_divergence_inner(float %pre.cond.val, i32 %n.i, ptr %mat, ptr %mat.oe, ptr %arr) {
+; GFX10-LABEL: nested_loops_temporal_divergence_inner:
+; GFX10:       ; %bb.0: ; %entry
+; GFX10-NEXT:    s_waitcnt vmcnt(0) expcnt(0) lgkmcnt(0)
+; GFX10-NEXT:    s_mov_b32 s5, 0
+; GFX10-NEXT:    v_cmp_lt_f32_e64 s6, 1.0, v0
+; GFX10-NEXT:    v_mov_b32_e32 v6, s5
+; GFX10-NEXT:    s_mov_b32 s7, 0
+; GFX10-NEXT:  .LBB3_1: ; %OuterHeader
+; GFX10-NEXT:    ; =>This Loop Header: Depth=1
+; GFX10-NEXT:    ; Child Loop BB3_2 Depth 2
+; GFX10-NEXT:    v_ashrrev_i32_e32 v7, 31, v6
+; GFX10-NEXT:    s_mov_b32 s9, s6
+; GFX10-NEXT:    s_mov_b32 s4, 0
+; GFX10-NEXT:    ; implicit-def: $sgpr8
+; GFX10-NEXT:    v_lshlrev_b64 v[8:9], 2, v[6:7]
+; GFX10-NEXT:    v_add_co_u32 v8, vcc_lo, v2, v8
+; GFX10-NEXT:    v_add_co_ci_u32_e32 v9, vcc_lo, v3, v9, vcc_lo
+; GFX10-NEXT:    flat_load_dword v0, v[8:9]
+; GFX10-NEXT:    v_mov_b32_e32 v8, s5
+; GFX10-NEXT:  .LBB3_2: ; %InnerHeader
+; GFX10-NEXT:    ; Parent Loop BB3_1 Depth=1
+; GFX10-NEXT:    ; => This Inner Loop Header: Depth=2
+; GFX10-NEXT:    v_cvt_f32_u32_e32 v9, v8
+; GFX10-NEXT:    s_xor_b32 s9, s9, -1
+; GFX10-NEXT:    v_add_nc_u32_e32 v8, 1, v8
+; GFX10-NEXT:    s_waitcnt vmcnt(0) lgkmcnt(0)
+; GFX10-NEXT:    v_cmp_gt_f32_e32 vcc_lo, v9, v0
+; GFX10-NEXT:    s_or_b32 s4, vcc_lo, s4
+; GFX10-NEXT:    s_andn2_b32 s8, s8, exec_lo
+; GFX10-NEXT:    s_and_b32 s10, exec_lo, s9
+; GFX10-NEXT:    s_or_b32 s8, s8, s10
+; GFX10-NEXT:    s_andn2_b32 exec_lo, exec_lo, s4
+; GFX10-NEXT:    s_cbranch_execnz .LBB3_2
+; GFX10-NEXT:  ; %bb.3: ; %UseInst
+; GFX10-NEXT:    ; in Loop: Header=BB3_1 Depth=1
+; GFX10-NEXT:    s_or_b32 exec_lo, exec_lo, s4
+; GFX10-NEXT:    v_add_nc_u32_e32 v0, 1, v6
+; GFX10-NEXT:    v_cmp_lt_u32_e32 vcc_lo, v6, v1
+; GFX10-NEXT:    v_add_co_u32 v8, s4, v4, v6
+; GFX10-NEXT:    v_add_co_ci_u32_e64 v9, s4, v5, v7, s4
+; GFX10-NEXT:    v_cndmask_b32_e64 v7, 0, 1, s8
+; GFX10-NEXT:    v_mov_b32_e32 v6, v0
+; GFX10-NEXT:    s_or_b32 s7, vcc_lo, s7
+; GFX10-NEXT:    flat_store_byte v[8:9], v7
+; GFX10-NEXT:    s_waitcnt_depctr 0xffe3
+; GFX10-NEXT:    s_andn2_b32 exec_lo, exec_lo, s7
+; GFX10-NEXT:    s_cbranch_execnz .LBB3_1
+; GFX10-NEXT:  ; %bb.4: ; %exit
+; GFX10-NEXT:    s_or_b32 exec_lo, exec_lo, s7
+; GFX10-NEXT:    s_waitcnt lgkmcnt(0)
+; GFX10-NEXT:    s_setpc_b64 s[30:31]
+entry:
+  %pre.cond = fcmp ogt float %pre.cond.val, 1.0
+  br label %OuterHeader
+
+OuterHeader:
+  %i = phi i32 [ 0, %entry ], [ %i.plus.1, %OuterLatch ]
+  %mat.i = getelementptr float, ptr %mat, i32 %i
+  %val.i = load float, ptr %mat.i
+  br label %InnerHeader
+
+InnerHeader:
+  %j = phi i32 [ 0, %OuterHeader ], [ %j.plus.1, %InnerHeader ]
+  %bool.counter = phi i1 [ %pre.cond, %OuterHeader ], [ %odd.even.counter, %InnerHeader ]
+
+  %odd.even.counter = xor i1 %bool.counter, true
+
+  %f.j = uitofp i32 %j to float
+  %j.plus.1 = add i32 %j, 1
+  %cond.j = fcmp ogt float %f.j, %val.i
+  br i1 %cond.j, label %UseInst, label %InnerHeader
+
+UseInst:
+  %mat.oe.i = getelementptr i1, ptr %mat.oe, i32 %i
+  ; mat.oe[i] = oddOReven(mat[i])
+  store i1 %odd.even.counter, ptr %mat.oe.i
+  br label %OuterLatch
+
+OuterLatch:
+  %cond.i = icmp ult i32 %i, %n.i
+  %i.plus.1 = add i32 %i, 1
+  br i1 %cond.i, label %exit, label %OuterHeader
+
+exit:
+  ret void
+}
+
+define void @nested_loops_temporal_divergence_outer(float %pre.cond.val, i32 %n.i, ptr %mat, ptr %mat.oe, ptr %arr) {
+; GFX10-LABEL: nested_loops_temporal_divergence_outer:
+; GFX10:       ; %bb.0: ; %entry
+; GFX10-NEXT:    s_waitcnt vmcnt(0) expcnt(0) lgkmcnt(0)
+; GFX10-NEXT:    s_mov_b32 s5, 0
+; GFX10-NEXT:    v_cmp_lt_f32_e64 s6, 1.0, v0
+; GFX10-NEXT:    v_mov_b32_e32 v6, s5
+; GFX10-NEXT:    s_mov_b32 s7, 0
+; GFX10-NEXT:  .LBB4_1: ; %OuterHeader
+; GFX10-NEXT:    ; =>This Loop Header: Depth=1
+; GFX10-NEXT:    ; Child Loop BB4_2 Depth 2
+; GFX10-NEXT:    v_ashrrev_i32_e32 v7, 31, v6
+; GFX10-NEXT:    s_mov_b32 s9, s6
+; GFX10-NEXT:    s_mov_b32 s4, 0
+; GFX10-NEXT:    ; implicit-def: $sgpr8
+; GFX10-NEXT:    v_lshlrev_b64 v[8:9], 2, v[6:7]
+; GFX10-NEXT:    v_add_co_u32 v8, vcc_lo, v2, v8
+; GFX10-NEXT:    v_add_co_ci_u32_e32 v9, vcc_lo, v3, v9, vcc_lo
+; GFX10-NEXT:    flat_load_dword v0, v[8:9]
+; GFX10-NEXT:    v_mov_b32_e32 v8, s5
+; GFX10-NEXT:  .LBB4_2: ; %InnerHeader
+; GFX10-NEXT:    ; Parent Loop BB4_1 Depth=1
+; GFX10-NEXT:    ; => This Inner Loop Header: Depth=2
+; GFX10-NEXT:    v_cvt_f32_u32_e32 v9, v8
+; GFX10-NEXT:    s_xor_b32 s9, s9, -1
+; GFX10-NEXT:    v_add_nc_u32_e32 v8, 1, v8
+; GFX10-NEXT:    s_waitcnt vmcnt(0) lgkmcnt(0)
+; GFX10-NEXT:    v_cmp_gt_f32_e32 vcc_lo, v9, v0
+; GFX10-NEXT:    s_or_b32 s4, vcc_lo, s4
+; GFX10-NEXT:    s_andn2_b32 s8, s8, exec_lo
+; GFX10-NEXT:    s_and_b32 s10, exec_lo, s9
+; GFX10-NEXT:    s_or_b32 s8, s8, s10
+; GFX10-NEXT:    s_andn2_b32 exec_lo, exec_lo, s4
+; GFX10-NEXT:    s_cbranch_execnz .LBB4_2
+; GFX10-NEXT:  ; %bb.3: ; %UseInst
+; GFX10-NEXT:    ; in Loop: Header=BB4_1 Depth=1
+; GFX10-NEXT:    s_or_b32 exec_lo, exec_lo, s4
+; GFX10-NEXT:    v_add_nc_u32_e32 v0, 1, v6
+; GFX10-NEXT:    v_cmp_lt_u32_e32 vcc_lo, v6, v1
+; GFX10-NEXT:    v_add_co_u32 v8, s4, v4, v6
+; GFX10-NEXT:    v_add_co_ci_u32_e64 v9, s4, v5, v7, s4
+; GFX10-NEXT:    v_cndmask_b32_e64 v7, 0, 1, s8
+; GFX10-NEXT:    v_mov_b32_e32 v6, v0
+; GFX10-NEXT:    s_or_b32 s7, vcc_lo, s7
+; GFX10-NEXT:    flat_store_byte v[8:9], v7
+; GFX10-NEXT:    s_waitcnt_depctr 0xffe3
+; GFX10-NEXT:    s_andn2_b32 exec_lo, exec_lo, s7
+; GFX10-NEXT:    s_cbranch_execnz .LBB4_1
+; GFX10-NEXT:  ; %bb.4: ; %exit
+; GFX10-NEXT:    s_or_b32 exec_lo, exec_lo, s7
+; GFX10-NEXT:    s_waitcnt lgkmcnt(0)
+; GFX10-NEXT:    s_setpc_b64 s[30:31]
+entry:
+  %pre.cond = fcmp ogt float %pre.cond.val, 1.0
+  br label %OuterHeader
+
+OuterHeader:
+  %i = phi i32 [ 0, %entry ], [ %i.plus.1, %OuterLatch ]
+  %mat.i = getelementptr float, ptr %mat, i32 %i
+  %val.i = load float, ptr %mat.i
+  br label %InnerHeader
+
+InnerHeader:
+  %j = phi i32 [ 0, %OuterHeader ], [ %j.plus.1, %InnerHeader ]
+  %bool.counter = phi i1 [ %pre.cond, %OuterHeader ], [ %odd.even.counter, %InnerHeader ]
+
+  %odd.even.counter = xor i1 %bool.counter, true
+
+  %f.j = uitofp i32 %j to float
+  %j.plus.1 = add i32 %j, 1
+  %cond.j = fcmp ogt float %f.j, %val.i
+  br i1 %cond.j, label %UseInst, label %InnerHeader
+
+UseInst:
+  %mat.oe.i = getelementptr i1, ptr %mat.oe, i32 %i
+  ; mat.oe[i] = oddOReven(mat[i])
+  store i1 %odd.even.counter, ptr %mat.oe.i
+  br label %OuterLatch
+
+OuterLatch:
+  %cond.i = icmp ult i32 %i, %n.i
+  %i.plus.1 = add i32 %i, 1
+  br i1 %cond.i, label %exit, label %OuterHeader
+
+exit:
+  ret void
+}
+
+define void @nested_loops_temporal_divergence_both(float %pre.cond.val, i32 %n.i, ptr %mat, ptr %mat.oe, ptr %arr) {
+; GFX10-LABEL: nested_loops_temporal_divergence_both:
+; GFX10:       ; %bb.0: ; %entry
+; GFX10-NEXT:    s_waitcnt vmcnt(0) expcnt(0) lgkmcnt(0)
+; GFX10-NEXT:    s_mov_b32 s5, 0
+; GFX10-NEXT:    v_cmp_lt_f32_e64 s6, 1.0, v0
+; GFX10-NEXT:    v_mov_b32_e32 v8, s5
+; GFX10-NEXT:    s_mov_b32 s7, 0
+; GFX10-NEXT:    ; implicit-def: $sgpr9
+; GFX10-NEXT:    ; implicit-def: $sgpr8
+; GFX10-NEXT:  .LBB5_1: ; %OuterHeader
+; GFX10-NEXT:    ; =>This Loop Header: Depth=1
+; GFX10-NEXT:    ; Child Loop BB5_2 Depth 2
+; GFX10-NEXT:    v_ashrrev_i32_e32 v9, 31, v8
+; GFX10-NEXT:    s_mov_b32 s10, s6
+; GFX10-NEXT:    s_mov_b32 s4, 0
+; GFX10-NEXT:    v_lshlrev_b64 v[10:11], 2, v[8:9]
+; GFX10-NEXT:    v_add_co_u32 v10, vcc_lo, v2, v10
+; GFX10-NEXT:    v_add_co_ci_u32_e32 v11, vcc_lo, v3, v11, vcc_lo
+; GFX10-NEXT:    flat_load_dword v0, v[10:11]
+; GFX10-NEXT:    v_mov_b32_e32 v10, s5
+; GFX10-NEXT:  .LBB5_2: ; %InnerHeader
+; GFX10-NEXT:    ; Parent Loop BB5_1 Depth=1
+; GFX10-NEXT:    ; => This Inner Loop Header: Depth=2
+; GFX10-NEXT:    v_cvt_f32_u32_e32 v11, v10
+; GFX10-NEXT:    s_xor_b32 s10, s10, -1
+; GFX10-NEXT:    v_add_nc_u32_e32 v10, 1, v10
+; GFX10-NEXT:    s_waitcnt vmcnt(0) lgkmcnt(0)
+; GFX10-NEXT:    v_cmp_gt_f32_e32 vcc_lo, v11, v0
+; GFX10-NEXT:    s_or_b32 s4, vcc_lo, s4
+; GFX10-NEXT:    s_andn2_b32 s8, s8, exec_lo
+; GFX10-NEXT:    s_and_b32 s11, exec_lo, s10
+; GFX10-NEXT:    s_or_b32 s8, s8, s11
+; GFX10-NEXT:    s_andn2_b32 exec_lo, exec_lo, s4
+; GFX10-NEXT:    s_cbranch_execnz .LBB5_2
+; GFX10-NEXT:  ; %bb.3: ; %UseInst
+; GFX10-NEXT:    ; in Loop: Header=BB5_1 Depth=1
+; GFX10-NEXT:    s_or_b32 exec_lo, exec_lo, s4
+; GFX10-NEXT:    v_add_nc_u32_e32 v0, 1, v8
+; GFX10-NEXT:    v_cmp_lt_u32_e32 vcc_lo, v8, v1
+; GFX10-NEXT:    v_add_co_u32 v10, s4, v4, v8
+; GFX10-NEXT:    v_add_co_ci_u32_e64 v11, s4, v5, v9, s4
+; GFX10-NEXT:    v_cndmask_b32_e64 v9, 0, 1, s8
+; GFX10-NEXT:    s_or_b32 s7, vcc_lo, s7
+; GFX10-NEXT:    v_mov_b32_e32 v8, v0
+; GFX10-NEXT:    s_andn2_b32 s4, s9, exec_lo
+; GFX10-NEXT:    s_and_b32 s9, exec_lo, s8
+; GFX10-NEXT:    flat_store_byte v[10:11], v9
+; GFX10-NEXT:    s_or_b32 s9, s4, s9
+; GFX10-NEXT:    s_waitcnt_depctr 0xffe3
+; GFX10-NEXT:    s_andn2_b32 exec_lo, exec_lo, s7
+; GFX10-NEXT:    s_cbranch_execnz .LBB5_1
+; GFX10-NEXT:  ; %bb.4: ; %exit
+; GFX10-NEXT:    s_or_b32 exec_lo, exec_lo, s7
+; GFX10-NEXT:    v_cndmask_b32_e64 v0, 0, 1, s9
+; GFX10-NEXT:    flat_store_byte v[6:7], v0
+; GFX10-NEXT:    s_waitcnt lgkmcnt(0)
+; GFX10-NEXT:    s_setpc_b64 s[30:31]
+entry:
+  %pre.cond = fcmp ogt float %pre.cond.val, 1.0
+  br label %OuterHeader
+
+OuterHeader:
+  %i = phi i32 [ 0, %entry ], [ %i.plus.1, %OuterLatch ]
+  %mat.i = getelementptr float, ptr %mat, i32 %i
+  %val.i = load float, ptr %mat.i
+  br label %InnerHeader
+
+InnerHeader:
+  %j = phi i32 [ 0, %OuterHeader ], [ %j.plus.1, %InnerHeader ]
+  %bool.counter = phi i1 [ %pre.cond, %OuterHeader ], [ %odd.even.counter, %InnerHeader ]
+
+  %odd.even.counter = xor i1 %bool.counter, true
+
+  %f.j = uitofp i32 %j to float
+  %j.plus.1 = add i32 %j, 1
+  %cond.j = fcmp ogt float %f.j, %val.i
+  br i1 %cond.j, label %UseInst, label %InnerHeader
+
+UseInst:
+  %mat.oe.i = getelementptr i1, ptr %mat.oe, i32 %i
+  ; mat.oe[i] = oddOReven(mat[i])
+  store i1 %odd.even.counter, ptr %mat.oe.i
+  br label %OuterLatch
+
+OuterLatch:
+  %cond.i = icmp ult i32 %i, %n.i
+  %i.plus.1 = add i32 %i, 1
+  br i1 %cond.i, label %exit, label %OuterHeader
+
+exit:
+  ; arr = oddOReven(mat[n.i - 1])
+  store i1 %odd.even.counter, ptr %arr
+  ret void
+}
