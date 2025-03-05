@@ -1,0 +1,12 @@
+#ifndef LLVM_LIB_TARGET_SYSTEMS_TARGETINFO_SYSTEMSTARGETINFO_H
+#define LLVM_LIB_TARGET_SYSTEMS_TARGETINFO_SYSTEMSTARGETINFO_H
+
+namespace llvm {
+
+class Target;
+
+Target &getTheSystemSTarget();
+
+} // end namespace llvm
+
+#endif // LLVM_LIB_TARGET_SYSTEMS_TARGETINFO_SYSTEMSTARGETINFO_H

@@ -494,6 +494,7 @@ set(LLVM_ALL_TARGETS
   RISCV
   Sparc
   SPIRV
+  SystemS
   SystemZ
   VE
   WebAssembly
