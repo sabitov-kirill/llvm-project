@@ -1,4 +1,5 @@
 //===-- llvm/TargetParser/Triple.h - Target triple helper class--*- C++ -*-===//
+//===-- llvm/TargetParser/Triple.h - Target triple helper class--*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -77,6 +78,7 @@ public:
     sparc,          // Sparc: sparc
     sparcv9,        // Sparcv9: Sparcv9
     sparcel,        // Sparc: (endianness = little). NB: 'Sparcle' is a CPU variant
+    systems,        // SystemS: System Simulator
     systemz,        // SystemZ: s390x
     tce,            // TCE (http://tce.cs.tut.fi/): tce
     tcele,          // TCE little endian (http://tce.cs.tut.fi/): tcele
