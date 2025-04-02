@@ -6,6 +6,7 @@
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/MC/TargetRegistry.h"
 
+#include "SystemS.h"
 #include "SystemSTargetMachine.h"
 #include "TargetInfo/SystemSTargetInfo.h"
 
@@ -20,10 +21,7 @@ std::string computeDataLayout(const Triple &TT, StringRef CPU,
 }
 
 Reloc::Model getEffectiveRelocModel(bool JIT, std::optional<Reloc::Model> RM) {
-  if (!RM || JIT) {
-    return Reloc::Static;
-  }
-  return *RM;
+  return Reloc::Static;
 }
 
 class SystemSPassConfig : public TargetPassConfig {
@@ -31,7 +29,14 @@ public:
   SystemSPassConfig(SystemSTargetMachine &TM, PassManagerBase &PM)
       : TargetPassConfig(TM, PM) {}
 
-  bool addInstSelector() override { return false; }
+  SystemSTargetMachine &getSystemSTargetMachine() const {
+    return getTM<SystemSTargetMachine>();
+  }
+
+  bool addInstSelector() override {
+    addPass(createSystemSISelDag(getSystemSTargetMachine(), getOptLevel()));
+    return false;
+  }
 };
 
 } // namespace
