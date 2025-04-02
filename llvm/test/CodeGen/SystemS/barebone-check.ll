@@ -1,0 +1,1 @@
+; RUN: llc -march=systems -verify-machineinstrs < %s
