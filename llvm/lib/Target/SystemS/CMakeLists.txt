@@ -8,6 +8,7 @@ tablegen(LLVM SystemSGenMCPseudoLowering.inc -gen-pseudo-lowering)
 tablegen(LLVM SystemSGenDAGISel.inc -gen-dag-isel)
 tablegen(LLVM SystemSGenCallingConv.inc -gen-callingconv)
 tablegen(LLVM SystemSGenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM SystemSGenMCCodeEmitter.inc -gen-emitter)
 add_public_tablegen_target(SystemSCommonTableGen)
 
 add_llvm_target(SystemSCodeGen

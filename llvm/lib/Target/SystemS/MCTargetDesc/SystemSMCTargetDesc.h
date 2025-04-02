@@ -7,4 +7,23 @@
 #define GET_INSTRINFO_ENUM
 #include "SystemSGenInstrInfo.inc"
 
+namespace llvm {
+
+class MCCodeEmitter;
+class MCContext;
+class MCInstrInfo;
+class MCAsmBackend;
+class MCObjectTargetWriter;
+class MCRegisterInfo;
+class MCSubtargetInfo;
+class MCTargetOptions;
+class Target;
+
+MCCodeEmitter *createSystemSMCCodeEmitter(const MCInstrInfo &MCII, MCContext &Ctx);
+MCAsmBackend *createSystemSAsmBackend(const Target &T, const MCSubtargetInfo &STI,
+                                  const MCRegisterInfo &MRI,
+                                  const MCTargetOptions &Options);
+
+} // namespace llvm
+
 #endif // LLVM_LIB_TARGET_SYSTEMS_MCTARGETDESC_SYSTEMSMCTARGETDESC_H
