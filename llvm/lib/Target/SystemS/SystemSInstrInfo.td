@@ -23,7 +23,7 @@ class SImmAsmOperand<int width> : AsmOperandClass {
 
 def systemsm16 : Operand<i32>, ImmLeaf<i32, [{return isInt<16>(Imm);}]> {
   let ParserMatchClass = SImmAsmOperand<16>;
-  let EncoderMethod = "getImmOpValue";
+  let EncoderMethod = "getSImm16OpValue";
   let DecoderMethod = "decodeSImmOperand<16>";
   let MCOperandPredicate = [{
     int64_t Imm;
@@ -39,17 +39,36 @@ def systemsm16 : Operand<i32>, ImmLeaf<i32, [{return isInt<16>(Imm);}]> {
 // SystemS Instructions
 //===----------------------------------------------------------------------===//
 
-let hasSideEffects = 0, mayLoad = 0, mayStore = 0, isCall = 1, isBranch = 1, isTerminator = 1 in
-def BR : SystemSInst<0x0, (outs), (ins GPR:$rs1), "BR $rs1",
-                  [(brind GPR:$rs1)]>;
+let
+  hasSideEffects = 0, 
+  mayLoad = 0,
+  mayStore = 0,
+  isCall = 1,
+  isBranch = 1,
+  isTerminator = 1,
+  r2 = 0,
+  r3_imm = 0 in
+def BR : SystemSInst<
+  0xBB,
+  (outs),
+  (ins GPR:$r1),
+  "br $r1",
+  [(brind GPR:$r1)]
+>;
 
 let isBarrier = 1, isReturn = 1, isTerminator = 1 in
-def PseudoRET : SystemSPseudoInst<(outs), (ins), "# PseudoRET",
-                [(systems_ret)]>,
-                PseudoInstExpansion<(BR R0)>;
+def PseudoRET : SystemSPseudoInst<
+  (outs),
+  (ins),
+  "# pseudo_ret",
+  [(systems_ret)]
+>, PseudoInstExpansion<(BR R0)>;
 
-// movli
-let isAsCheapAsAMove = 1, isCodeGenOnly = 1, isReMaterializable = 1 in
-def MOVLI : SystemSInst<0x0, (outs GPR:$rd), (ins systemsm16:$imm),
-                     "MOVli $rd $imm",
-                     [(set GPR:$rd, systemsm16:$imm)]>;
+let isAsCheapAsAMove = 1, isCodeGenOnly = 1, isReMaterializable = 1, r2 = 0 in
+def MOVLI : SystemSInst<
+  0xAA,
+  (outs GPR:$r1),
+  (ins systemsm16:$r3_imm),
+  "li $r1 $r3_imm",
+  [(set GPR:$r1, systemsm16:$r3_imm)]
+>;

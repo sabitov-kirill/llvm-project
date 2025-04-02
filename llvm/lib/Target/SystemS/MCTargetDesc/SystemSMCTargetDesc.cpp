@@ -80,4 +80,7 @@ extern "C" void LLVMInitializeSystemSTargetMC() {
                                           createSystemSMCSubtargetInfo);
   TargetRegistry::RegisterMCInstPrinter(TheSystemSTarget,
                                         createSystemSMCInstPrinter);
+  TargetRegistry::RegisterMCCodeEmitter(TheSystemSTarget,
+                                        createSystemSMCCodeEmitter);
+  TargetRegistry::RegisterMCAsmBackend(TheSystemSTarget, createSystemSAsmBackend);
 }
