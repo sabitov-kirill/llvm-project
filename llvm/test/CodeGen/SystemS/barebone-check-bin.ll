@@ -1,4 +1,4 @@
-; RUN: llc -march=systems < %s | FileCheck %s
+; RUN: llc -march=systems -filetype=obj < %s | FileCheck %s
 define void @test-asm() {
   ret void
 }
