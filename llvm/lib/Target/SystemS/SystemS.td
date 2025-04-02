@@ -2,12 +2,10 @@ include "llvm/Target/Target.td"
 
 include "SystemSRegisterInfo.td"
 include "SystemSInstrInfo.td"
+include "SystemSCallingConv.td"
 
-
-class Proc<
-  string Name,
-  list<SubtargetFeature> Features
-> : Processor<Name, NoItineraries, Features>;
+class Proc<string Name, list<SubtargetFeature> Features>
+ : Processor<Name, NoItineraries, Features>;
 
 def : Proc<"generic", []>;
 

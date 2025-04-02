@@ -1,6 +1,7 @@
 add_llvm_component_library(LLVMSystemSDesc
   SystemSMCTargetDesc.cpp
   SystemSMCAsmInfo.cpp
+  SystemSInstPrinter.cpp
 
   LINK_COMPONENTS
   MC

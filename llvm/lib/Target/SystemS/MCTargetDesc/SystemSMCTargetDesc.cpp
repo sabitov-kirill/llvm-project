@@ -1,5 +1,6 @@
 #include "SystemSMCTargetDesc.h"
 #include "SystemSInfo.h"
+#include "SystemSInstPrinter.h"
 #include "SystemSMCAsmInfo.h"
 #include "SystemSMCTargetDesc.h"
 
@@ -56,15 +57,27 @@ MCAsmInfo *createSystemSMCAsmInfo(const MCRegisterInfo &MRI, const Triple &TT,
   return MAI;
 }
 
+MCInstPrinter *createSystemSMCInstPrinter(const Triple &T,
+                                          unsigned SyntaxVariant,
+                                          const MCAsmInfo &MAI,
+                                          const MCInstrInfo &MII,
+                                          const MCRegisterInfo &MRI) {
+  return new SystemSInstPrinter(MAI, MII, MRI);
+}
+
 } // namespace
 
 extern "C" void LLVMInitializeSystemSTargetMC() {
   Target &TheSystemSTarget = getTheSystemSTarget();
+
+  RegisterMCAsmInfoFn X(TheSystemSTarget, createSystemSMCAsmInfo);
+
   TargetRegistry::RegisterMCRegInfo(TheSystemSTarget,
                                     createSystemSMCRegisterInfo);
   TargetRegistry::RegisterMCInstrInfo(TheSystemSTarget,
                                       createSystemSMCInstrInfo);
   TargetRegistry::RegisterMCSubtargetInfo(TheSystemSTarget,
                                           createSystemSMCSubtargetInfo);
-  RegisterMCAsmInfoFn X(TheSystemSTarget, createSystemSMCAsmInfo);
+  TargetRegistry::RegisterMCInstPrinter(TheSystemSTarget,
+                                        createSystemSMCInstPrinter);
 }

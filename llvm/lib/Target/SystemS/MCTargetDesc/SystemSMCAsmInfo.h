@@ -8,8 +8,7 @@ namespace llvm {
 class Triple;
 
 class SystemSELFMCAsmInfo : public MCAsmInfoELF {
-
-public:
+public: /* Constructors and destructures */
   explicit SystemSELFMCAsmInfo(const Triple &TheTriple);
 };
 

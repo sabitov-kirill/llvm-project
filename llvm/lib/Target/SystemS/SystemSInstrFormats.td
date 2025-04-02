@@ -1,4 +1,6 @@
 //===----------------------------------------------------------------------===//
+//  Describe SystemS instructions format
+//
 //  CPU INSTRUCTION FORMATS
 //
 //  FF FF FF FF
@@ -9,22 +11,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-class SystemSInst<
-  bits<8> op,
-  dag outs,
-  dag ins,
-  string asmstr,
-  list<dag> pattern
-> : Instruction {
-  let Namespace = "SystemS";
-  let DecoderNamespace = "SystemS";
-
+// Generic SystemS Format
+class SystemSInst<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern>: Instruction
+{
   // Inst and Size: for tablegen(... -gen-emitter) and
   // tablegen(... -gen-disassembler) in CMakeLists.txt
+  let Namespace = "SystemS";
+  let DecoderNamespace = "SystemS";
   let Size = 4;
+
   field bits<32> Inst;
 
-  bits<8>  Opcode = op;
+  bits<8> Opcode = op;
   bits<4>  r1 = 0;
   bits<4>  r2 = 0;
   bits<16> r3_imm = 0;
@@ -38,14 +36,12 @@ class SystemSInst<
   let InOperandList  = ins;
   let AsmString   = asmstr;
   let Pattern     = pattern;
+
 }
 
-class SystemSPseudoInst<
-  dag outs,
-  dag ins,
-  string asmstr,
-  list<dag> pattern
-> : SystemSInst<0, outs, ins, asmstr, pattern> {
+// Pseudo instructions format
+class SystemSPseudoInst<dag outs, dag ins, string asmstr, list<dag> pattern>
+   : SystemSInst<0, outs, ins, asmstr, pattern> {
   let isPseudo = 1;
   let isCodeGenOnly = 1;
 }

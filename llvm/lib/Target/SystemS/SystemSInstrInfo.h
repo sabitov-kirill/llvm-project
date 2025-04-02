@@ -14,8 +14,7 @@ namespace llvm {
 class SystemSSubtarget;
 
 class SystemSInstrInfo : public SystemSGenInstrInfo {
-
-public:
+public: /* Constructors and destructors */
   SystemSInstrInfo();
 };
 
