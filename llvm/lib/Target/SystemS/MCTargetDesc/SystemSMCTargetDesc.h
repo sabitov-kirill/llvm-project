@@ -7,6 +7,8 @@
 #define GET_INSTRINFO_ENUM
 #include "SystemSGenInstrInfo.inc"
 
+#include <memory>
+
 namespace llvm {
 
 class MCCodeEmitter;
@@ -19,10 +21,14 @@ class MCSubtargetInfo;
 class MCTargetOptions;
 class Target;
 
-MCCodeEmitter *createSystemSMCCodeEmitter(const MCInstrInfo &MCII, MCContext &Ctx);
-MCAsmBackend *createSystemSAsmBackend(const Target &T, const MCSubtargetInfo &STI,
-                                  const MCRegisterInfo &MRI,
-                                  const MCTargetOptions &Options);
+MCCodeEmitter *createSystemSMCCodeEmitter(const MCInstrInfo &MCII,
+                                          MCContext &Ctx);
+MCAsmBackend *createSystemSAsmBackend(const Target &T,
+                                      const MCSubtargetInfo &STI,
+                                      const MCRegisterInfo &MRI,
+                                      const MCTargetOptions &Options);
+std::unique_ptr<MCObjectTargetWriter>
+createSystemSELFObjectWriter(bool Is64Bit, uint8_t OSABI);
 
 } // namespace llvm
 

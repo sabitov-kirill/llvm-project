@@ -49,7 +49,10 @@ public:
   }
 
   std::unique_ptr<MCObjectTargetWriter>
-  createObjectTargetWriter() const override {}
+  createObjectTargetWriter() const override {
+    uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(OSType);
+    return createSystemSELFObjectWriter(false, OSABI);
+  }
 
 private: /* Private data */
   [[maybe_unused]]

@@ -4,7 +4,8 @@ add_llvm_component_library(LLVMSystemSDesc
   SystemSInstPrinter.cpp
   SystemSMCCodeEmiter.cpp
   SystemSAsmBackend.cpp
-      
+  SystemSELFObjectWriter.cpp
+  
   LINK_COMPONENTS
   MC
   Support
