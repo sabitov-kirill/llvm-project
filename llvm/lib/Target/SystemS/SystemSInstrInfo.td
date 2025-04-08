@@ -72,3 +72,75 @@ def MOVLI : SystemSInst<
   "li $r1 $r3_imm",
   [(set GPR:$r1, systemsm16:$r3_imm)]
 >;
+
+// Fixed-point math instructions
+let r3_imm = 0 in {
+def FPSQRT : SystemSInst<
+  0xC0,
+  (outs GPR:$r1),
+  (ins GPR:$r2),
+  "fpsqrt $r1, $r2",
+  [(set GPR:$r1, (int_systems_fpsqrt GPR:$r2))]
+>;
+
+def FPSIN : SystemSInst<
+  0xC1,
+  (outs GPR:$r1),
+  (ins GPR:$r2),
+  "fpsin $r1, $r2",
+  [(set GPR:$r1, (int_systems_fpsin GPR:$r2))]
+>;
+
+def FPCOS : SystemSInst<
+  0xC2,
+  (outs GPR:$r1),
+  (ins GPR:$r2),
+  "fpcos $r1, $r2",
+  [(set GPR:$r1, (int_systems_fpcos GPR:$r2))]
+>;
+} // End let r3_imm = 0
+
+def FPATAN2 : SystemSInst<
+  0xC2,
+  (outs GPR:$r1),
+  (ins GPR:$r2, GPR:$r3_imm),
+  "fpatan2 $r1, $r2, $r3_imm",
+  [(set GPR:$r1, (int_systems_fpatan2 GPR:$r2, GPR:$r3_imm))]
+>;
+
+// Graphics instructions
+def PUTPIXEL : SystemSInst<
+  0xEE,
+  (outs),
+  (ins GPR:$r1, GPR:$r2, GPR:$r3_imm),
+  "putpixel $r1, $r2, $r3_imm",
+  [(int_systems_putpixel GPR:$r1, GPR:$r2, GPR:$r3_imm)]
+>;
+
+let r2 = 0, r3_imm = 0 in
+def FLUSH : SystemSInst<
+  0xEF,
+  (outs GPR:$r1),
+  (ins),
+  "flush $r1",
+  [(set GPR:$r1, (int_systems_flush))]
+>;
+
+// Utility instructions
+let r2 = 0, r3_imm = 0 in {
+def LOG : SystemSInst<
+  0xF0,
+  (outs),
+  (ins GPR:$r1),
+  "log $r1",
+  [(int_systems_log GPR:$r1)]
+>;
+
+def DELTATIME : SystemSInst<
+  0xF1,
+  (outs GPR:$r1),
+  (ins),
+  "deltatime $r1",
+  [(set GPR:$r1, (int_systems_deltatime))]
+>;
+} // End let r2 = 0, r3_imm = 0

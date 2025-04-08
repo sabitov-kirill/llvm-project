@@ -36,7 +36,6 @@ class SystemSInst<bits<8> op, dag outs, dag ins, string asmstr, list<dag> patter
   let InOperandList  = ins;
   let AsmString   = asmstr;
   let Pattern     = pattern;
-
 }
 
 // Pseudo instructions format
