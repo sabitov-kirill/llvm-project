@@ -1,0 +1,15 @@
+// Fixed-point Math Builtins
+BUILTIN(systemSFPSqrt, "ii", "nc")
+BUILTIN(systemSFPSin, "ii", "nc")
+BUILTIN(systemSFPCos, "ii", "nc")
+BUILTIN(systemSFPAtan2, "iii", "nc")
+
+// Graphics Builtins
+BUILTIN(systemSPutPixel, "viii", "nc")
+BUILTIN(systemSFlush, "i", "nc")
+
+// Utility Builtins
+BUILTIN(systemSLog, "vv*", "nc")
+BUILTIN(systemSDeltaTime, "i", "nc")
+
+#undef BUILTIN

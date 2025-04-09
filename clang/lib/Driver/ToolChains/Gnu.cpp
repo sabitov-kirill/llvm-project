@@ -255,6 +255,8 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
     return "elf32lriscv";
   case llvm::Triple::riscv64:
     return "elf64lriscv";
+  case llvm::Triple::systems:
+    return "elf32_sim";
   case llvm::Triple::sparc:
   case llvm::Triple::sparcel:
     return "elf32_sparc";
@@ -305,7 +307,7 @@ static bool getStaticPIE(const ArgList &Args, const ToolChain &TC) {
 
 static bool getStatic(const ArgList &Args) {
   return Args.hasArg(options::OPT_static) &&
-      !Args.hasArg(options::OPT_static_pie);
+         !Args.hasArg(options::OPT_static_pie);
 }
 
 void tools::gnutools::StaticLibTool::ConstructJob(
@@ -332,7 +334,7 @@ void tools::gnutools::StaticLibTool::ConstructJob(
 
   for (const auto &II : Inputs) {
     if (II.isFilename()) {
-       CmdArgs.push_back(II.getFilename());
+      CmdArgs.push_back(II.getFilename());
     }
   }
 
@@ -488,8 +490,8 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       std::string P;
       if (ToolChain.GetRuntimeLibType(Args) == ToolChain::RLT_CompilerRT &&
           !isAndroid) {
-        std::string crtbegin = ToolChain.getCompilerRT(Args, "crtbegin",
-                                                       ToolChain::FT_Object);
+        std::string crtbegin =
+            ToolChain.getCompilerRT(Args, "crtbegin", ToolChain::FT_Object);
         if (ToolChain.getVFS().exists(crtbegin))
           P = crtbegin;
       }
@@ -649,8 +651,8 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         std::string P;
         if (ToolChain.GetRuntimeLibType(Args) == ToolChain::RLT_CompilerRT &&
             !isAndroid) {
-          std::string crtend = ToolChain.getCompilerRT(Args, "crtend",
-                                                       ToolChain::FT_Object);
+          std::string crtend =
+              ToolChain.getCompilerRT(Args, "crtend", ToolChain::FT_Object);
           if (ToolChain.getVFS().exists(crtend))
             P = crtend;
         }
@@ -811,7 +813,8 @@ void tools::gnutools::Assembler::ConstructJob(Compilation &C,
     }
 
     switch (arm::getARMFloatABI(getToolChain(), Args)) {
-    case arm::FloatABI::Invalid: llvm_unreachable("must have an ABI!");
+    case arm::FloatABI::Invalid:
+      llvm_unreachable("must have an ABI!");
     case arm::FloatABI::Soft:
       CmdArgs.push_back(Args.MakeArgString("-mfloat-abi=soft"));
       break;
@@ -1574,12 +1577,13 @@ static void findAndroidArmMultilibs(const Driver &D,
   bool IsArmArch = TargetTriple.getArch() == llvm::Triple::arm;
   bool IsThumbArch = TargetTriple.getArch() == llvm::Triple::thumb;
   bool IsV7SubArch = TargetTriple.getSubArch() == llvm::Triple::ARMSubArch_v7;
-  bool IsThumbMode = IsThumbArch ||
+  bool IsThumbMode =
+      IsThumbArch ||
       Args.hasFlag(options::OPT_mthumb, options::OPT_mno_thumb, false) ||
       (IsArmArch && llvm::ARM::parseArchISA(Arch) == llvm::ARM::ISAKind::THUMB);
-  bool IsArmV7Mode = (IsArmArch || IsThumbArch) &&
-      (llvm::ARM::parseArchVersion(Arch) == 7 ||
-       (IsArmArch && Arch == "" && IsV7SubArch));
+  bool IsArmV7Mode =
+      (IsArmArch || IsThumbArch) && (llvm::ARM::parseArchVersion(Arch) == 7 ||
+                                     (IsArmArch && Arch == "" && IsV7SubArch));
   addMultilibFlag(IsArmV7Mode, "-march=armv7-a", Flags);
   addMultilibFlag(IsThumbMode, "-mthumb", Flags);
 
@@ -2423,10 +2427,9 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
 
   static const char *const ARMLibDirs[] = {"/lib"};
   static const char *const ARMTriples[] = {"arm-linux-gnueabi"};
-  static const char *const ARMHFTriples[] = {"arm-linux-gnueabihf",
-                                             "armv7hl-redhat-linux-gnueabi",
-                                             "armv6hl-suse-linux-gnueabi",
-                                             "armv7hl-suse-linux-gnueabi"};
+  static const char *const ARMHFTriples[] = {
+      "arm-linux-gnueabihf", "armv7hl-redhat-linux-gnueabi",
+      "armv6hl-suse-linux-gnueabi", "armv7hl-suse-linux-gnueabi"};
   static const char *const ARMebLibDirs[] = {"/lib"};
   static const char *const ARMebTriples[] = {"armeb-linux-gnueabi"};
   static const char *const ARMebHFTriples[] = {
@@ -2814,8 +2817,8 @@ void Generic_GCC::GCCInstallationDetector::AddDefaultGCCPrefixes(
 }
 
 bool Generic_GCC::GCCInstallationDetector::ScanGCCForMultilibs(
-    const llvm::Triple &TargetTriple, const ArgList &Args,
-    StringRef Path, bool NeedsBiarchSuffix) {
+    const llvm::Triple &TargetTriple, const ArgList &Args, StringRef Path,
+    bool NeedsBiarchSuffix) {
   llvm::Triple::ArchType TargetArch = TargetTriple.getArch();
   DetectedMultilibs Detected;
 
@@ -2978,8 +2981,8 @@ bool Generic_GCC::GCCInstallationDetector::ScanGentooGccConfig(
         }
       }
       // Test the path based on the version in /etc/env.d/gcc/config-{tuple}.
-      std::string basePath = "/usr/lib/gcc/" + ActiveVersion.first.str() + "/"
-          + ActiveVersion.second.str();
+      std::string basePath = "/usr/lib/gcc/" + ActiveVersion.first.str() + "/" +
+                             ActiveVersion.second.str();
       GentooScanPaths.push_back(StringRef(basePath));
 
       // Scan all paths for GCC libraries.
@@ -3107,8 +3110,7 @@ void Generic_GCC::PushPPaths(ToolChain::path_list &PPaths) {
   }
 }
 
-void Generic_GCC::AddMultilibPaths(const Driver &D,
-                                   const std::string &SysRoot,
+void Generic_GCC::AddMultilibPaths(const Driver &D, const std::string &SysRoot,
                                    const std::string &OSLibDir,
                                    const std::string &MultiarchTriple,
                                    path_list &Paths) {
@@ -3173,8 +3175,7 @@ void Generic_GCC::AddMultilibPaths(const Driver &D,
   }
 }
 
-void Generic_GCC::AddMultiarchPaths(const Driver &D,
-                                    const std::string &SysRoot,
+void Generic_GCC::AddMultiarchPaths(const Driver &D, const std::string &SysRoot,
                                     const std::string &OSLibDir,
                                     path_list &Paths) {
   if (GCCInstallation.isValid()) {
@@ -3184,7 +3185,7 @@ void Generic_GCC::AddMultiarchPaths(const Driver &D,
     const Multilib &Multilib = GCCInstallation.getMultilib();
     addPathIfExists(
         D, LibPath + "/../" + GCCTriple.str() + "/lib" + Multilib.osSuffix(),
-                    Paths);
+        Paths);
   }
 }
 
@@ -3229,9 +3230,9 @@ void Generic_GCC::addSYCLIncludeArgs(const ArgList &DriverArgs,
   SYCLInstallation->addSYCLIncludeArgs(DriverArgs, CC1Args);
 }
 
-void
-Generic_GCC::addLibCxxIncludePaths(const llvm::opt::ArgList &DriverArgs,
-                                   llvm::opt::ArgStringList &CC1Args) const {
+void Generic_GCC::addLibCxxIncludePaths(
+    const llvm::opt::ArgList &DriverArgs,
+    llvm::opt::ArgStringList &CC1Args) const {
   const Driver &D = getDriver();
   std::string SysRoot = computeSysRoot();
   if (SysRoot.empty())
@@ -3378,9 +3379,9 @@ bool Generic_GCC::addGCCLibStdCxxIncludePaths(
   return false;
 }
 
-void
-Generic_GCC::addLibStdCxxIncludePaths(const llvm::opt::ArgList &DriverArgs,
-                                      llvm::opt::ArgStringList &CC1Args) const {
+void Generic_GCC::addLibStdCxxIncludePaths(
+    const llvm::opt::ArgList &DriverArgs,
+    llvm::opt::ArgStringList &CC1Args) const {
   if (GCCInstallation.isValid()) {
     addGCCLibStdCxxIncludePaths(DriverArgs, CC1Args,
                                 GCCInstallation.getTriple().str());
