@@ -31,6 +31,7 @@
 #include "polly/MaximalStaticExpansion.h"
 #include "polly/Options.h"
 #include "polly/Pass/PollyFunctionPass.h"
+#include "polly/Profiling/ScopProfiler.h"
 #include "polly/PruneUnprofitable.h"
 #include "polly/ScheduleOptimizer.h"
 #include "polly/ScopDetection.h"
@@ -209,6 +210,18 @@ static cl::opt<bool>
                      cl::desc("Polly - Print static control parts (SCoPs)"),
                      cl::cat(PollyCategory));
 
+// Controls both PassPhase::ScopProfiling (original SCoP instrumentation via
+// PhaseManager) and the parallel instrumentation of the codegen'd SCoP path
+// inside CodeGeneration.cpp.  Enabling this flag without also enabling codegen
+// gives you measurements of the unoptimized SCoP only; enabling it together
+// with -polly (full pipeline) gives you both.
+static cl::opt<bool, true>
+    XScopProfilingEnabled("polly-profile-scops",
+                          cl::desc("Instrument SCoPs with CAS profiling calls "
+                                   "to collect dataset samples"),
+                          cl::Hidden, cl::location(polly::ScopProfilingEnabled),
+                          cl::cat(PollyCategory));
+
 static cl::opt<bool>
     PollyPrintScops("polly-print-scops",
                     cl::desc("Print polyhedral description of all regions"),
@@ -227,7 +240,7 @@ static bool shouldEnablePollyForDiagnostic() {
     PollyTrackFailures = true;
 
   return PollyOnlyPrinter || PollyPrinter || PollyOnlyViewer || PollyViewer ||
-         ExportJScop;
+         ExportJScop || ScopProfilingEnabled;
 }
 
 /// Parser of parameters for LoopVectorize pass.
@@ -245,6 +258,8 @@ static llvm::Expected<PollyPassOptions> parsePollyOptions(StringRef Params,
   // 'polly<no-pass>')
   if (PollyPrintDetect)
     PassEnabled[static_cast<size_t>(PassPhase::PrintDetect)] = true;
+  if (ScopProfilingEnabled)
+    PassEnabled[static_cast<size_t>(PassPhase::ScopProfiling)] = true;
   if (PollyPrintScops)
     PassEnabled[static_cast<size_t>(PassPhase::PrintScopInfo)] = true;
   if (PollyPrintDeps)

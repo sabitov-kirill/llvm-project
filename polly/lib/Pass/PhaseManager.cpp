@@ -17,6 +17,7 @@
 #include "polly/ForwardOpTree.h"
 #include "polly/JSONExporter.h"
 #include "polly/MaximalStaticExpansion.h"
+#include "polly/Profiling/ScopProfiler.h"
 #include "polly/PruneUnprofitable.h"
 #include "polly/ScheduleOptimizer.h"
 #include "polly/ScopDetection.h"
@@ -175,6 +176,15 @@ public:
       if (!SD.isMaxRegionInScop(*R, /*Verify=*/false))
         continue;
 
+      // Phase: scop-profiling (original, pre-optimization)
+      // Instruments the ORIGINAL (unoptimized) SCoP region boundaries with
+      // calls to the CAS profiling runtime. Runs before any transformation so
+      // it measures the unoptimized code path. When CodeGen is also enabled,
+      // ScopProfiler is additionally called from CodeGeneration.cpp to
+      // instrument the generated code's guard fork/merge blocks.
+      if (Opts.isPhaseEnabled(PassPhase::ScopProfiling) && !Opts.isPhaseEnabled(PassPhase::CodeGen))
+        runScopProfiling(*S, *F.getParent());
+
       // Phase: flatten
       if (Opts.isPhaseEnabled(PassPhase::Flatten))
         runFlattenSchedulePass(*S);
@@ -285,6 +295,8 @@ StringRef polly::getPhaseName(PassPhase Phase) {
     return "scops";
   case PassPhase::PrintScopInfo:
     return "print-scops";
+  case PassPhase::ScopProfiling:
+    return "scop-profiling";
   case PassPhase::Flatten:
     return "flatten";
   case PassPhase::Dependences:
@@ -331,6 +343,7 @@ PassPhase polly::parsePhase(StringRef Name) {
       .Case("view-scops-only", PassPhase::ViewScopsOnly)
       .Case("scops", PassPhase::ScopInfo)
       .Case("print-scops", PassPhase::PrintScopInfo)
+      .Case("scop-profiling", PassPhase::ScopProfiling)
       .Case("flatten", PassPhase::Flatten)
       .Case("deps", PassPhase::Dependences)
       .Case("print-deps", PassPhase::PrintDependences)

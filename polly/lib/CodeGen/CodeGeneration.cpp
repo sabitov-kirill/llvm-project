@@ -26,6 +26,7 @@
 #include "polly/CodeGen/Utils.h"
 #include "polly/DependenceInfo.h"
 #include "polly/Options.h"
+#include "polly/Profiling/ScopProfiler.h"
 #include "polly/ScopInfo.h"
 #include "polly/Support/ScopHelper.h"
 #include "llvm/ADT/Statistic.h"
@@ -239,6 +240,22 @@ static bool generateCode(Scop &S, IslAstInfo &AI, LoopInfo &LI,
 
     BasicBlock *MergeBlock = ExitBlock->getUniqueSuccessor();
     P.insertRegionEnd(MergeBlock->getTerminator());
+  }
+
+  if (ScopProfilingEnabled) {
+    Module *Mod = EnteringBB->getParent()->getParent();
+    {
+      ScopProfiler P(S, Mod, "opt");
+      P.initialize();
+      P.insertScopStart(&*StartBlock->getFirstNonPHIIt());
+      P.insertScopEnd(ExitBlock->getTerminator());
+    }
+    if (BasicBlock *ExitingBB = S.getExitingBlock()) {
+      ScopProfiler P(S, Mod, "orig");
+      P.initialize();
+      P.insertScopStart(&*S.getEntry()->getFirstNonPHIIt());
+      P.insertScopEnd(ExitingBB->getTerminator());
+    }
   }
 
   // First generate code for the hoisted invariant loads and transitively the

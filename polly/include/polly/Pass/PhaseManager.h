@@ -44,6 +44,8 @@ enum class PassPhase {
   ScopInfo,
   PrintScopInfo,
 
+  ScopProfiling,
+
   Flatten,
 
   Dependences,
