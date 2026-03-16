@@ -91,6 +91,12 @@ if(POLLY_ENABLE_BARVINOK)
   set(ISL_INSTALL      "${CMAKE_BINARY_DIR}/isl-install")
   set(BARVINOK_INSTALL "${CMAKE_BINARY_DIR}/barvinok-install")
 
+  if(LLVM_ENABLE_PIC)
+    set(BARVINOK_WITH_PIC "--with-pic")
+  else()
+    set(BARVINOK_WITH_PIC "")
+  endif()
+
   # Build ISL from barvinok's bundled isl/ — the single ISL used by both
   # Polly and barvinok (avoids duplicate symbols at link time).
   # autogen.sh must run first because isl/configure is not checked in.
@@ -100,9 +106,9 @@ if(POLLY_ENABLE_BARVINOK)
       sh -c "test -f ${ISL_SRC}/configure || (cd ${ISL_SRC} && ./autogen.sh)"
       COMMAND ${ISL_SRC}/configure
         --prefix=${ISL_INSTALL}
-        --enable-shared=no
-        --disable-shared
+        --enable-shared
         --enable-static
+        ${BARVINOK_WITH_PIC}
     BUILD_COMMAND   make -j
     INSTALL_COMMAND make install
     BUILD_BYPRODUCTS ${ISL_INSTALL}/lib/libisl.a
@@ -120,12 +126,14 @@ if(POLLY_ENABLE_BARVINOK)
         --with-isl=system
         --with-isl-prefix=${ISL_INSTALL}
         --with-polylib=bundled
-        --enable-shared=no
-        --disable-shared
+        --enable-shared
         --enable-static
+        ${BARVINOK_WITH_PIC}
     BUILD_COMMAND   make -j
     INSTALL_COMMAND make install
-    BUILD_BYPRODUCTS ${BARVINOK_INSTALL}/lib/libbarvinok.a
+    BUILD_BYPRODUCTS
+      ${BARVINOK_INSTALL}/lib/libbarvinok.a
+      ${BARVINOK_INSTALL}/lib/libpolylibgmp.a
   )
 
   # ISL imported target — Polly links this instead of its bundled PollyISL.

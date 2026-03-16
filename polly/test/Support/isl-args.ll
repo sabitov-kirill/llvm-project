@@ -3,7 +3,7 @@
 ; RUN: not opt %loadNPMPolly '-passes=polly-custom<scops>' -polly-print-scops -disable-output -polly-isl-arg=-asdf < %s 2>&1 | FileCheck %s -match-full-lines --check-prefix=UNKNOWN
 ; RUN: opt %loadNPMPolly '-passes=polly-custom<scops>' -polly-print-scops -disable-output -polly-isl-arg=--schedule-algorithm=feautrier < %s
 
-; VERSION: isl-{{.*}}-IMath-32
+; VERSION: isl-{{.*}}
 ; HELP: Usage: -polly-isl-arg [OPTION...]
 ; UNKNOWN: -polly-isl-arg: unrecognized option: -asdf
 
