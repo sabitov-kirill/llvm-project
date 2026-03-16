@@ -3,8 +3,10 @@
 ; Verify that ScopProfiler instruments the ORIGINAL (unoptimized) SCoP when
 ; code generation is disabled.  The pass should:
 ;   - emit a global string constant with the SCoP ID (no suffix)
-;   - call __cas_scop_start before the first non-PHI of the entry block
-;   - call __cas_scop_end  before the terminator of the unique exiting block
+;   - allocate a [9 x i64] features array at function entry
+;   - call __cas_scop_start(ptr scop_id, ptr features, i64 9) before the first
+;     non-PHI of the entry block
+;   - call __cas_scop_end before the terminator of the unique exiting block
 ;   - declare (but not define) __cas_scop_start / __cas_scop_end
 
 ; void f(long *A, long N) {
@@ -37,9 +39,10 @@ return:
 
 ; Anchor past globals (SCoP ID constant names contain "for.i:" as a substring).
 ; CHECK-LABEL: define void @f
+; CHECK:         %scop_feats{{[0-9]*}} = alloca [9 x i64]
 ; CHECK-LABEL: for.i:
 ; CHECK-NEXT:    %i = phi
-; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%for.i_%return", i64 {{.*}})
+; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%for.i_%return", ptr {{.*}}, i64 9)
 ; CHECK:         call void @__cas_scop_end(ptr @"__cas_scop_id_f_%for.i_%return")
 ; CHECK-NEXT:    br i1 %exitcond
 
@@ -49,5 +52,5 @@ return:
 ; CHECK-NEXT:    ret void
 
 ; CHECK: declare void @__cas_scop_init()
-; CHECK: declare void @__cas_scop_start(ptr, i64)
+; CHECK: declare void @__cas_scop_start(ptr, ptr, i64)
 ; CHECK: declare void @__cas_scop_end(ptr)

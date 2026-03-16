@@ -4,6 +4,7 @@
 ; fallback paths produced by executeScopConditionally() when code generation
 ; is enabled.  The pass should:
 ;   - emit two global string constants: one with suffix ":opt", one with ":orig"
+;   - allocate a [9 x i64] features array at function entry
 ;   - in the optimized path (polly.start): call __cas_scop_start with ":opt" ID
 ;   - in polly.exiting:                   call __cas_scop_end  with ":opt" ID
 ;   - in the fallback entry block (%next): call __cas_scop_start with ":orig" ID
@@ -45,12 +46,13 @@ return:
 ; Anchor past globals (SCoP ID constants contain "next:" as a substring).
 ; Fallback blocks appear before polly.* blocks in the output IR.
 ; CHECK-LABEL: define void @f
+; CHECK:         %scop_feats{{[0-9]*}} = alloca [9 x i64]
 ; CHECK-LABEL: next:
-; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig", i64 {{.*}})
+; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig", ptr {{.*}}, i64 9)
 ; CHECK-LABEL: return.region_exiting:
 ; CHECK-NEXT:    call void @__cas_scop_end(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig")
 ; CHECK-LABEL: polly.start:
-; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_opt", i64 {{.*}})
+; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_opt", ptr {{.*}}, i64 9)
 ; CHECK-LABEL: polly.exiting:
 ; CHECK-NEXT:    call void @__cas_scop_end(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_opt")
 
@@ -61,5 +63,5 @@ return:
 ; CHECK-NEXT:    ret void
 
 ; CHECK: declare void @__cas_scop_init()
-; CHECK: declare void @__cas_scop_start(ptr, i64)
+; CHECK: declare void @__cas_scop_start(ptr, ptr, i64)
 ; CHECK: declare void @__cas_scop_end(ptr)

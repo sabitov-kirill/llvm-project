@@ -1,3 +1,3 @@
-add_polly_unittest(ScopFeaturesTest
-  ScopFeaturesTest.cpp
+add_polly_unittest(ScopFeaturesTripCountTest
+  ScopFeaturesTripCountTest.cpp
 )

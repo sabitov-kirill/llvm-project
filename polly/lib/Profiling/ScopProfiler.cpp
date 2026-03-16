@@ -9,6 +9,8 @@
 #include "polly/Profiling/ScopProfiler.h"
 #include "polly/Profiling/ScopFeatures.h"
 #include "polly/ScopInfo.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "polly/Support/PollyDebug.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/IR/GlobalVariable.h"
@@ -63,8 +65,10 @@ Function *ScopProfiler::getScopStartFn() {
   const char *Name = "__cas_scop_start";
   Function *F = M->getFunction(Name);
   if (!F) {
+    // (ptr scop_id, ptr features, i64 num_features) -> void
     FunctionType *Ty = FunctionType::get(
-        Builder.getVoidTy(), {Builder.getPtrTy(), Builder.getInt64Ty()}, false);
+        Builder.getVoidTy(),
+        {Builder.getPtrTy(), Builder.getPtrTy(), Builder.getInt64Ty()}, false);
     F = Function::Create(Ty, Function::ExternalLinkage, Name, M);
   }
   return F;
@@ -138,9 +142,25 @@ void ScopProfiler::insertScopStart(Instruction *InsertBefore) {
   assert(ScopIDGlobal && "Call initialize() before insertScopStart()");
   POLLY_DEBUG(dbgs() << "[ScopProfiler] insertScopStart for " << ScopIDStr
                      << "\n");
+
   Builder.SetInsertPoint(InsertBefore->getIterator());
-  Value *TripCount = computeTripCountIR(S, Builder, InsertBefore);
-  Builder.CreateCall(getScopStartFn(), {ScopIDGlobal, TripCount});
+  auto FVals = computeScopFeaturesIR(S, Builder, InsertBefore);
+
+  // Alloca at function entry so the array doesn't grow on every loop iteration.
+  IRBuilder<> AllocaB(
+      &*InsertBefore->getFunction()->getEntryBlock().getFirstInsertionPt());
+  auto *ArrTy = ArrayType::get(Builder.getInt64Ty(), NumScopFeatures);
+  auto *Arr = AllocaB.CreateAlloca(ArrTy, nullptr, "scop_feats");
+
+  // Store each feature into the array (insert point is before InsertBefore).
+  Builder.SetInsertPoint(InsertBefore->getIterator());
+  for (unsigned I = 0; I < NumScopFeatures; ++I)
+    Builder.CreateStore(FVals[I],
+                        Builder.CreateConstGEP2_32(ArrTy, Arr, 0, I));
+
+  // Arr is already a ptr to the first element in LLVM's opaque-pointer model.
+  Builder.CreateCall(getScopStartFn(),
+                     {ScopIDGlobal, Arr, Builder.getInt64(NumScopFeatures)});
 }
 
 void ScopProfiler::insertScopEnd(Instruction *InsertBefore) {

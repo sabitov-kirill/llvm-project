@@ -60,6 +60,9 @@ add_llvm_pass_plugin(Polly
   CodeGen/RuntimeDebugBuilder.cpp
   CodeGen/PerfMonitor.cpp
   Profiling/ScopFeatures.cpp
+  Profiling/ScopFeaturesLoop.cpp
+  Profiling/ScopFeaturesMemory.cpp
+  Profiling/ScopFeaturesTripCount.cpp
   Profiling/ScopProfiler.cpp
   Exchange/JSONExporter.cpp
   Pass/PhaseManager.cpp
@@ -157,4 +160,26 @@ endif ()
 if (TARGET intrinsics_gen)
   # Check if we are building as part of an LLVM build
   add_dependencies(obj.Polly intrinsics_gen)
+endif()
+
+# ---------------------------------------------------------------------------
+# SCoP feature map: auto-generate scop_feature_map.json from the FeatureID
+# enum comment in ScopFeatures.h so Python tooling has a stable ABI index.
+# ---------------------------------------------------------------------------
+find_package(Python3 QUIET COMPONENTS Interpreter)
+if(Python3_FOUND)
+  set(_FEAT_HEADER
+    ${POLLY_SOURCE_DIR}/include/polly/Profiling/ScopFeatures.h)
+  set(_FEAT_SCRIPT
+    ${CMAKE_CURRENT_SOURCE_DIR}/Profiling/gen_scop_feature_map.py)
+  set(_FEAT_JSON
+    ${CMAKE_BINARY_DIR}/scop_feature_map.json)
+
+  add_custom_command(
+    OUTPUT  ${_FEAT_JSON}
+    COMMAND ${Python3_EXECUTABLE} ${_FEAT_SCRIPT} ${_FEAT_HEADER} ${_FEAT_JSON}
+    DEPENDS ${_FEAT_SCRIPT} ${_FEAT_HEADER}
+    COMMENT "Generating scop_feature_map.json"
+  )
+  add_custom_target(scop_feature_map ALL DEPENDS ${_FEAT_JSON})
 endif()

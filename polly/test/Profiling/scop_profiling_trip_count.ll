@@ -1,10 +1,8 @@
 ; RUN: opt %loadNPMPolly '-passes=polly<no-default-opts;no-end2end>' -polly-profile-scops -S < %s | FileCheck %s
 ;
-; Verify that ScopProfiler passes a second argument (the trip count, i64) to
-; __cas_scop_start when SCoP profiling is enabled.
-;
-; Without barvinok the trip count is -1 (ConstantInt); with barvinok it is a
-; runtime expression.  Either way __cas_scop_start must receive two arguments.
+; Verify that ScopProfiler passes a features array to __cas_scop_start.
+; The first element (index 0 = TripCount) is i64; without barvinok it is -1.
+; Either way __cas_scop_start must receive (ptr, ptr, i64) arguments.
 ;
 ; void f(long *A, long N) {
 ;   for (long i = 0; i < N; ++i)
@@ -30,5 +28,6 @@ return:
   ret void
 }
 
-; CHECK: call void @__cas_scop_start(ptr {{.*}}, i64 {{.*}})
-; CHECK: declare void @__cas_scop_start(ptr, i64)
+; CHECK: %scop_feats{{[0-9]*}} = alloca [9 x i64]
+; CHECK: call void @__cas_scop_start(ptr {{.*}}, ptr {{.*}}, i64 9)
+; CHECK: declare void @__cas_scop_start(ptr, ptr, i64)

@@ -5,13 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-//===----------------------------------------------------------------------===//
 
 #ifndef POLLY_PROFILING_SCOPFEATURES_H
 #define POLLY_PROFILING_SCOPFEATURES_H
 
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/IRBuilder.h"
 
 struct isl_id;
@@ -26,17 +25,35 @@ namespace polly {
 
 class Scop;
 
-/// Generate LLVM IR that evaluates the Ehrhart polynomial of \p S's iteration
-/// domain at the live SCoP parameter values, inserting IR before \p B's
-/// current insert point.
+/// Fixed ABI: append only.  Index == position in the features[] array passed
+/// to __cas_scop_start at runtime.
+enum class FeatureID : unsigned {
+  TripCount    = 0, // Ehrhart polynomial via barvinok; -1 if unavailable
+  StmtCount    = 1, // S.getSize()
+  MaxLoopDepth = 2, // S.getMaxLoopDepth()
+  NumParams    = 3, // S.getNumParams()
+  NumArrays    = 4, // count(S.arrays())
+  NumDimensions = 5, // sum of SAI->getNumberOfDimensions() over all arrays
+  NumReads     = 6, // count MA->isRead() across all stmts
+  NumWrites    = 7, // count MA->isWrite() across all stmts
+  NumReductions = 8, // count MA->isReductionLike() across all stmts
+  NUM_FEATURES  = 9
+};
+
+constexpr unsigned NumScopFeatures =
+    static_cast<unsigned>(FeatureID::NUM_FEATURES);
+
+/// Compute all SCoP features as LLVM IR Values (i64 each).
 ///
-/// Requires barvinok (POLLY_HAVE_BARVINOK) for parametric SCoPs. Without it,
-/// always returns ConstantInt(-1, i64).
+/// Returns a SmallVector of exactly NumScopFeatures values, in FeatureID order.
+/// Compile-time-constant features are emitted as ConstantInt.  TripCount may
+/// be a runtime expression when barvinok is available and the SCoP has
+/// symbolic parameters.
 ///
 /// The caller must set B's insert point before calling this function.
-/// Returns an llvm::Value* of type i64. Never returns nullptr.
-llvm::Value *computeTripCountIR(const Scop &S, llvm::IRBuilder<> &B,
-                                llvm::Instruction *InsertBefore);
+llvm::SmallVector<llvm::Value *, NumScopFeatures>
+computeScopFeaturesIR(const Scop &S, llvm::IRBuilder<> &B,
+                      llvm::Instruction *InsertBefore);
 
 #ifdef POLLY_HAVE_BARVINOK
 /// Evaluate \p PwQp — a piecewise quasi-polynomial — at the parameter values
