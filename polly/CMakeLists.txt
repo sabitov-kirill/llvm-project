@@ -80,10 +80,97 @@ endif ()
 
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+option(POLLY_ENABLE_BARVINOK
+  "Enable barvinok for parametric Ehrhart trip-count computation" OFF)
+
+if(POLLY_ENABLE_BARVINOK)
+  include(ExternalProject)
+
+  set(BARVINOK_SRC "${CMAKE_SOURCE_DIR}/../../../third-party/barvinok")
+  set(ISL_SRC      "${BARVINOK_SRC}/isl")
+  set(ISL_INSTALL      "${CMAKE_BINARY_DIR}/isl-install")
+  set(BARVINOK_INSTALL "${CMAKE_BINARY_DIR}/barvinok-install")
+
+  # Build ISL from barvinok's bundled isl/ — the single ISL used by both
+  # Polly and barvinok (avoids duplicate symbols at link time).
+  # autogen.sh must run first because isl/configure is not checked in.
+  ExternalProject_Add(isl_ext
+    SOURCE_DIR ${ISL_SRC}
+    CONFIGURE_COMMAND
+      sh -c "test -f ${ISL_SRC}/configure || (cd ${ISL_SRC} && ./autogen.sh)"
+      COMMAND ${ISL_SRC}/configure
+        --prefix=${ISL_INSTALL}
+        --enable-shared=no
+        --disable-shared
+        --enable-static
+    BUILD_COMMAND   make -j
+    INSTALL_COMMAND make install
+    BUILD_BYPRODUCTS ${ISL_INSTALL}/lib/libisl.a
+  )
+
+  # Build barvinok against the same isl-install/.
+  # polylib/configure is not checked in either — run its autogen.sh first.
+  ExternalProject_Add(barvinok_ext
+    SOURCE_DIR ${BARVINOK_SRC}
+    DEPENDS    isl_ext
+    CONFIGURE_COMMAND
+      sh -c "test -f ${BARVINOK_SRC}/polylib/configure || (cd ${BARVINOK_SRC}/polylib && ./autogen.sh)"
+      COMMAND ${BARVINOK_SRC}/configure
+        --prefix=${BARVINOK_INSTALL}
+        --with-isl=system
+        --with-isl-prefix=${ISL_INSTALL}
+        --with-polylib=bundled
+        --enable-shared=no
+        --disable-shared
+        --enable-static
+    BUILD_COMMAND   make -j
+    INSTALL_COMMAND make install
+    BUILD_BYPRODUCTS ${BARVINOK_INSTALL}/lib/libbarvinok.a
+  )
+
+  # ISL imported target — Polly links this instead of its bundled PollyISL.
+  file(MAKE_DIRECTORY ${ISL_INSTALL}/include)
+  add_library(ISL STATIC IMPORTED GLOBAL)
+  set_target_properties(ISL PROPERTIES
+    IMPORTED_LOCATION             ${ISL_INSTALL}/lib/libisl.a
+    INTERFACE_INCLUDE_DIRECTORIES ${ISL_INSTALL}/include
+  )
+  add_dependencies(ISL isl_ext)
+
+  # Override the POLLY_BUNDLED_ISL default: we provide our own ISL target.
+  set(POLLY_BUNDLED_ISL OFF CACHE BOOL
+    "Use the bundled version of libisl included in Polly" FORCE)
+  # Keep Polly's source ISL include path so Polly-specific headers like
+  # isl/isl-noexceptions.h (not present in standard ISL) remain visible.
+  set(ISL_INCLUDE_DIRS
+    ${ISL_INSTALL}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/External/isl/include
+  )
+  set(ISL_TARGET ISL)
+
+  # Barvinok imported target.
+  file(MAKE_DIRECTORY ${BARVINOK_INSTALL}/include)
+  add_library(Barvinok STATIC IMPORTED GLOBAL)
+  set_target_properties(Barvinok PROPERTIES
+    IMPORTED_LOCATION             ${BARVINOK_INSTALL}/lib/libbarvinok.a
+    INTERFACE_INCLUDE_DIRECTORIES ${BARVINOK_INSTALL}/include
+    INTERFACE_LINK_LIBRARIES      ${BARVINOK_INSTALL}/lib/libpolylibgmp.a
+  )
+  add_dependencies(Barvinok barvinok_ext)
+
+  add_compile_definitions(POLLY_HAVE_BARVINOK)
+  find_library(NTL_LIBRARY ntl REQUIRED)
+  find_library(GMP_LIBRARY gmp REQUIRED)
+endif()
+
 option(POLLY_BUNDLED_ISL "Use the bundled version of libisl included in Polly" ON)
 if (NOT POLLY_BUNDLED_ISL)
-  find_package(ISL MODULE REQUIRED)
-  message(STATUS "Using external libisl ${ISL_VERSION} in: ${ISL_PREFIX}")
+  if (NOT TARGET ISL)
+    # POLLY_ENABLE_BARVINOK already created the ISL target above; only call
+    # find_package when we genuinely need a system/external ISL.
+    find_package(ISL MODULE REQUIRED)
+    message(STATUS "Using external libisl ${ISL_VERSION} in: ${ISL_PREFIX}")
+  endif()
   set(ISL_TARGET ISL)
 else()
   set(ISL_INCLUDE_DIRS

@@ -59,6 +59,7 @@ add_llvm_pass_plugin(Polly
   CodeGen/Utils.cpp
   CodeGen/RuntimeDebugBuilder.cpp
   CodeGen/PerfMonitor.cpp
+  Profiling/ScopFeatures.cpp
   Profiling/ScopProfiler.cpp
   Exchange/JSONExporter.cpp
   Pass/PhaseManager.cpp
@@ -119,6 +120,11 @@ target_link_libraries(Polly PUBLIC
   ${ISL_TARGET}
 )
 
+if(POLLY_ENABLE_BARVINOK)
+  target_link_libraries(Polly PUBLIC Barvinok ${NTL_LIBRARY} ${GMP_LIBRARY})
+  add_dependencies(Polly Barvinok)
+endif()
+
 # Create a loadable module Polly.so that can be loaded using
 # LLVM's/clang's "-load" option.
 if (WIN32 OR CYGWIN OR NOT LLVM_ENABLE_PIC)
@@ -137,6 +143,10 @@ else ()
   # Adding them once more would have the effect that both copies try to register
   # the same command line options, to which LLVM reacts with an error.
   target_link_libraries(LLVMPolly PUBLIC ${ISL_TARGET})
+  if(POLLY_ENABLE_BARVINOK)
+    target_link_libraries(LLVMPolly PUBLIC Barvinok ${NTL_LIBRARY} ${GMP_LIBRARY})
+    add_dependencies(LLVMPolly Barvinok)
+  endif()
 
   set_target_properties(LLVMPolly
     PROPERTIES

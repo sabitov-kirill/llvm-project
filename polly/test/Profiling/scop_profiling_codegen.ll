@@ -46,11 +46,11 @@ return:
 ; Fallback blocks appear before polly.* blocks in the output IR.
 ; CHECK-LABEL: define void @f
 ; CHECK-LABEL: next:
-; CHECK-NEXT:    call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig")
+; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig", i64 {{.*}})
 ; CHECK-LABEL: return.region_exiting:
 ; CHECK-NEXT:    call void @__cas_scop_end(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig")
 ; CHECK-LABEL: polly.start:
-; CHECK-NEXT:    call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_opt")
+; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_opt", i64 {{.*}})
 ; CHECK-LABEL: polly.exiting:
 ; CHECK-NEXT:    call void @__cas_scop_end(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_opt")
 
@@ -61,5 +61,5 @@ return:
 ; CHECK-NEXT:    ret void
 
 ; CHECK: declare void @__cas_scop_init()
-; CHECK: declare void @__cas_scop_start(ptr)
+; CHECK: declare void @__cas_scop_start(ptr, i64)
 ; CHECK: declare void @__cas_scop_end(ptr)

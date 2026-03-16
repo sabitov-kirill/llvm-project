@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "polly/Profiling/ScopProfiler.h"
+#include "polly/Profiling/ScopFeatures.h"
 #include "polly/ScopInfo.h"
 #include "polly/Support/PollyDebug.h"
 #include "llvm/ADT/Twine.h"
@@ -62,8 +63,8 @@ Function *ScopProfiler::getScopStartFn() {
   const char *Name = "__cas_scop_start";
   Function *F = M->getFunction(Name);
   if (!F) {
-    FunctionType *Ty =
-        FunctionType::get(Builder.getVoidTy(), {Builder.getPtrTy()}, false);
+    FunctionType *Ty = FunctionType::get(
+        Builder.getVoidTy(), {Builder.getPtrTy(), Builder.getInt64Ty()}, false);
     F = Function::Create(Ty, Function::ExternalLinkage, Name, M);
   }
   return F;
@@ -138,7 +139,8 @@ void ScopProfiler::insertScopStart(Instruction *InsertBefore) {
   POLLY_DEBUG(dbgs() << "[ScopProfiler] insertScopStart for " << ScopIDStr
                      << "\n");
   Builder.SetInsertPoint(InsertBefore->getIterator());
-  Builder.CreateCall(getScopStartFn(), {ScopIDGlobal});
+  Value *TripCount = computeTripCountIR(S, Builder, InsertBefore);
+  Builder.CreateCall(getScopStartFn(), {ScopIDGlobal, TripCount});
 }
 
 void ScopProfiler::insertScopEnd(Instruction *InsertBefore) {

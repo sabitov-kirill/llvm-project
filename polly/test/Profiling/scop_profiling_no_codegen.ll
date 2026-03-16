@@ -39,7 +39,7 @@ return:
 ; CHECK-LABEL: define void @f
 ; CHECK-LABEL: for.i:
 ; CHECK-NEXT:    %i = phi
-; CHECK-NEXT:    call void @__cas_scop_start(ptr @"__cas_scop_id_f_%for.i_%return")
+; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%for.i_%return", i64 {{.*}})
 ; CHECK:         call void @__cas_scop_end(ptr @"__cas_scop_id_f_%for.i_%return")
 ; CHECK-NEXT:    br i1 %exitcond
 
@@ -49,5 +49,5 @@ return:
 ; CHECK-NEXT:    ret void
 
 ; CHECK: declare void @__cas_scop_init()
-; CHECK: declare void @__cas_scop_start(ptr)
+; CHECK: declare void @__cas_scop_start(ptr, i64)
 ; CHECK: declare void @__cas_scop_end(ptr)
