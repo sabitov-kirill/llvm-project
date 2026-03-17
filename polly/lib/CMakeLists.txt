@@ -59,7 +59,9 @@ add_llvm_pass_plugin(Polly
   CodeGen/Utils.cpp
   CodeGen/RuntimeDebugBuilder.cpp
   CodeGen/PerfMonitor.cpp
+  Profiling/IslPolyEval.cpp
   Profiling/ScopFeatures.cpp
+  Profiling/ScopFeaturesFootprint.cpp
   Profiling/ScopFeaturesLoop.cpp
   Profiling/ScopFeaturesMemory.cpp
   Profiling/ScopFeaturesTripCount.cpp

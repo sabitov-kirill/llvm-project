@@ -9,12 +9,9 @@
 #ifndef POLLY_PROFILING_SCOPFEATURES_H
 #define POLLY_PROFILING_SCOPFEATURES_H
 
-#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/IRBuilder.h"
 
-struct isl_id;
-struct isl_pw_qpolynomial;
 
 namespace llvm {
 class Instruction;
@@ -36,8 +33,9 @@ enum class FeatureID : unsigned {
   NumDimensions = 5, // sum of SAI->getNumberOfDimensions() over all arrays
   NumReads     = 6, // count MA->isRead() across all stmts
   NumWrites    = 7, // count MA->isWrite() across all stmts
-  NumReductions = 8, // count MA->isReductionLike() across all stmts
-  NUM_FEATURES  = 9
+  NumReductions     = 8, // count MA->isReductionLike() across all stmts
+  MemFootprintBytes = 9, // union of all array access ranges × element size; -1 if unavailable
+  NUM_FEATURES      = 10
 };
 
 constexpr unsigned NumScopFeatures =
@@ -55,17 +53,6 @@ llvm::SmallVector<llvm::Value *, NumScopFeatures>
 computeScopFeaturesIR(const Scop &S, llvm::IRBuilder<> &B,
                       llvm::Instruction *InsertBefore);
 
-#ifdef POLLY_HAVE_BARVINOK
-/// Evaluate \p PwQp — a piecewise quasi-polynomial — at the parameter values
-/// given in \p ParamMap (isl_id* → llvm::Value*), inserting IR into \p B.
-///
-/// Used directly by unit tests (which can construct pwqp without a real Scop).
-/// Returns an i64 Value; returns ConstantInt(-1) on any failure.
-llvm::Value *
-evalPwQpolynomialIR(isl_pw_qpolynomial *PwQp,
-                    llvm::DenseMap<isl_id *, llvm::Value *> &ParamMap,
-                    llvm::IRBuilder<> &B);
-#endif // POLLY_HAVE_BARVINOK
 
 } // namespace polly
 

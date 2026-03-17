@@ -106,6 +106,7 @@ if(POLLY_ENABLE_BARVINOK)
       sh -c "test -f ${ISL_SRC}/configure || (cd ${ISL_SRC} && ./autogen.sh)"
       COMMAND ${ISL_SRC}/configure
         --prefix=${ISL_INSTALL}
+        --with-gmp=system
         --enable-shared
         --enable-static
         ${BARVINOK_WITH_PIC}
@@ -140,9 +141,9 @@ if(POLLY_ENABLE_BARVINOK)
   file(MAKE_DIRECTORY ${ISL_INSTALL}/include)
   add_library(ISL STATIC IMPORTED GLOBAL)
   set_target_properties(ISL PROPERTIES
-    IMPORTED_LOCATION             ${ISL_INSTALL}/lib/libisl.a
-    INTERFACE_INCLUDE_DIRECTORIES ${ISL_INSTALL}/include
+    IMPORTED_LOCATION ${ISL_INSTALL}/lib/libisl.a
   )
+  target_include_directories(ISL INTERFACE ${ISL_INSTALL}/include)
   add_dependencies(ISL isl_ext)
 
   # Override the POLLY_BUNDLED_ISL default: we provide our own ISL target.
@@ -160,9 +161,12 @@ if(POLLY_ENABLE_BARVINOK)
   file(MAKE_DIRECTORY ${BARVINOK_INSTALL}/include)
   add_library(Barvinok STATIC IMPORTED GLOBAL)
   set_target_properties(Barvinok PROPERTIES
-    IMPORTED_LOCATION             ${BARVINOK_INSTALL}/lib/libbarvinok.a
-    INTERFACE_INCLUDE_DIRECTORIES ${BARVINOK_INSTALL}/include
-    INTERFACE_LINK_LIBRARIES      ${BARVINOK_INSTALL}/lib/libpolylibgmp.a
+    IMPORTED_LOCATION ${BARVINOK_INSTALL}/lib/libbarvinok.a
+  )
+  target_include_directories(Barvinok INTERFACE ${BARVINOK_INSTALL}/include)
+  target_link_libraries(Barvinok INTERFACE
+    ${BARVINOK_INSTALL}/lib/libpolylibgmp.a
+    ISL
   )
   add_dependencies(Barvinok barvinok_ext)
 

@@ -28,6 +28,6 @@ return:
   ret void
 }
 
-; CHECK: %scop_feats{{[0-9]*}} = alloca [9 x i64]
-; CHECK: call void @__cas_scop_start(ptr {{.*}}, ptr {{.*}}, i64 9)
+; CHECK: %scop_feats{{[0-9]*}} = alloca [10 x i64]
+; CHECK: call void @__cas_scop_start(ptr {{.*}}, ptr {{.*}}, i64 10)
 ; CHECK: declare void @__cas_scop_start(ptr, ptr, i64)

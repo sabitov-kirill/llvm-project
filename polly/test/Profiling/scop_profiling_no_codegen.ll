@@ -3,8 +3,8 @@
 ; Verify that ScopProfiler instruments the ORIGINAL (unoptimized) SCoP when
 ; code generation is disabled.  The pass should:
 ;   - emit a global string constant with the SCoP ID (no suffix)
-;   - allocate a [9 x i64] features array at function entry
-;   - call __cas_scop_start(ptr scop_id, ptr features, i64 9) before the first
+;   - allocate a [10 x i64] features array at function entry
+;   - call __cas_scop_start(ptr scop_id, ptr features, i64 10) before the first
 ;     non-PHI of the entry block
 ;   - call __cas_scop_end before the terminator of the unique exiting block
 ;   - declare (but not define) __cas_scop_start / __cas_scop_end
@@ -39,10 +39,10 @@ return:
 
 ; Anchor past globals (SCoP ID constant names contain "for.i:" as a substring).
 ; CHECK-LABEL: define void @f
-; CHECK:         %scop_feats{{[0-9]*}} = alloca [9 x i64]
+; CHECK:         %scop_feats{{[0-9]*}} = alloca [10 x i64]
 ; CHECK-LABEL: for.i:
 ; CHECK-NEXT:    %i = phi
-; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%for.i_%return", ptr {{.*}}, i64 9)
+; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%for.i_%return", ptr {{.*}}, i64 10)
 ; CHECK:         call void @__cas_scop_end(ptr @"__cas_scop_id_f_%for.i_%return")
 ; CHECK-NEXT:    br i1 %exitcond
 

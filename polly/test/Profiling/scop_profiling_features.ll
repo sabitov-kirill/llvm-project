@@ -12,6 +12,7 @@
 ;   [6] NumReads     = 0   (no array loads; %i is an IV scalar, not an array)
 ;   [7] NumWrites    = 1   (store to A[i])
 ;   [8] NumReductions = 0
+;   [9] MemFootprintBytes = runtime (N elements × 8 B) or -1
 
 target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -33,7 +34,7 @@ return:
 }
 
 ; CHECK-LABEL: define void @f
-; CHECK:  %scop_feats{{[0-9]*}} = alloca [9 x i64]
+; CHECK:  %scop_feats{{[0-9]*}} = alloca [10 x i64]
 
 ; Slot 0: TripCount — runtime expression (barvinok) or -1; just verify a store exists.
 ; CHECK:  store i64 {{.*}}, ptr {{.*}}
@@ -48,4 +49,7 @@ return:
 ; CHECK:  store i64 1, ptr {{.*}}
 ; CHECK:  store i64 0, ptr {{.*}}
 
-; CHECK:  call void @__cas_scop_start(ptr {{.*}}, ptr {{.*}}, i64 9)
+; Slot 9: MemFootprintBytes — runtime or -1.
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+
+; CHECK:  call void @__cas_scop_start(ptr {{.*}}, ptr {{.*}}, i64 10)

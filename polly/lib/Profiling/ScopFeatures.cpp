@@ -28,14 +28,15 @@ polly::computeScopFeaturesIR(const Scop &S, IRBuilder<> &B,
   auto C = [&](int64_t v) -> Value * { return ConstantInt::get(I64, v); };
 
   return {
-    /* TripCount     */ tripCountIR(S, B, InsertBefore),
-    /* StmtCount     */ C(stmtCount(S)),
-    /* MaxLoopDepth  */ C(maxLoopDepth(S)),
-    /* NumParams     */ C(numParams(S)),
-    /* NumArrays     */ C(numArrays(S)),
-    /* NumDimensions */ C(numDimensions(S)),
-    /* NumReads      */ C(numReads(S)),
-    /* NumWrites     */ C(numWrites(S)),
-    /* NumReductions */ C(numReductions(S)),
+    /* TripCount          */ tripCountIR(S, B, InsertBefore),
+    /* StmtCount          */ C(stmtCount(S)),
+    /* MaxLoopDepth       */ C(maxLoopDepth(S)),
+    /* NumParams          */ C(numParams(S)),
+    /* NumArrays          */ C(numArrays(S)),
+    /* NumDimensions      */ C(numDimensions(S)),
+    /* NumReads           */ C(numReads(S)),
+    /* NumWrites          */ C(numWrites(S)),
+    /* NumReductions      */ C(numReductions(S)),
+    /* MemFootprintBytes  */ footprintBytesIR(S, B, InsertBefore),
   };
 }

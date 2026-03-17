@@ -12,7 +12,7 @@
 
 #ifdef POLLY_HAVE_BARVINOK
 
-#include "polly/Profiling/ScopFeatures.h"
+#include "polly/Profiling/IslPolyEval.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"

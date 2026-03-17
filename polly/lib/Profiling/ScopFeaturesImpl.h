@@ -42,6 +42,10 @@ int64_t numReductions(const Scop &S);
 llvm::Value *tripCountIR(const Scop &S, llvm::IRBuilder<> &B,
                          llvm::Instruction *InsertBefore);
 
+// Memory footprint IR codegen (ScopFeaturesFootprint.cpp)
+llvm::Value *footprintBytesIR(const Scop &S, llvm::IRBuilder<> &B,
+                               llvm::Instruction *InsertBefore);
+
 } // namespace features
 } // namespace polly
 
