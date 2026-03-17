@@ -26,8 +26,6 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Module.h"
 
-#include <cstdio>
-
 #ifdef POLLY_HAVE_BARVINOK
 #include <barvinok/isl.h>
 #endif
