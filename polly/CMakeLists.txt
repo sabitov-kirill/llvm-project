@@ -83,6 +83,9 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 option(POLLY_ENABLE_BARVINOK
   "Enable barvinok for parametric Ehrhart trip-count computation" OFF)
 
+include(CMakeDependentOption)
+cmake_dependent_option(POLLY_BUNDLED_ISL "Use the bundled version of libisl included in Polly" ON "NOT POLLY_ENABLE_BARVINOK" OFF)
+
 if(POLLY_ENABLE_BARVINOK)
   include(ExternalProject)
 
@@ -146,9 +149,6 @@ if(POLLY_ENABLE_BARVINOK)
   target_include_directories(ISL INTERFACE ${ISL_INSTALL}/include)
   add_dependencies(ISL isl_ext)
 
-  # Override the POLLY_BUNDLED_ISL default: we provide our own ISL target.
-  set(POLLY_BUNDLED_ISL OFF CACHE BOOL
-    "Use the bundled version of libisl included in Polly" FORCE)
   # Keep Polly's source ISL include path so Polly-specific headers like
   # isl/isl-noexceptions.h (not present in standard ISL) remain visible.
   set(ISL_INCLUDE_DIRS
@@ -175,7 +175,6 @@ if(POLLY_ENABLE_BARVINOK)
   find_library(GMP_LIBRARY gmp REQUIRED)
 endif()
 
-option(POLLY_BUNDLED_ISL "Use the bundled version of libisl included in Polly" ON)
 if (NOT POLLY_BUNDLED_ISL)
   if (NOT TARGET ISL)
     # POLLY_ENABLE_BARVINOK already created the ISL target above; only call
