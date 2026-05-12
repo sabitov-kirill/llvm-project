@@ -22,3 +22,17 @@ int64_t polly::features::maxLoopDepth(const Scop &S) {
 int64_t polly::features::numParams(const Scop &S) {
   return (int64_t)S.getNumParams();
 }
+
+int64_t polly::features::numArrays(const Scop &S) {
+  int64_t N = 0;
+  for (auto &SAI : S.arrays())
+    (void)SAI, ++N;
+  return N;
+}
+
+int64_t polly::features::numDimensions(const Scop &S) {
+  int64_t N = 0;
+  for (auto &SAI : S.arrays())
+    N += (int64_t)SAI->getNumberOfDimensions();
+  return N;
+}

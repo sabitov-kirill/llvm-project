@@ -1,4 +1,4 @@
-//===--- ScopFeaturesFootprint.cpp - Memory footprint SCoP feature --------===//
+//===--- ScopFeaturesMemory.cpp - Static array-structure SCoP features ----===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,15 +6,11 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Implements footprintBytesIR() (internal).
+// Static (compile-time constant) memory-structure features: numArrays and
+// numDimensions.  No barvinok required.
 //
-// The footprint is the number of distinct bytes touched by all array accesses
-// in the SCoP.  For each ScopArrayInfo of kind Array, the access ranges of all
-// statements are unioned, the cardinality of the resulting set is computed via
-// barvinok, and the result is multiplied by the element's byte size.  Sums
-// across all arrays yield the total footprint.
-//
-// Without barvinok the feature returns -1.
+// Dynamic memory-access features (dynNumReads, dynNumWrites, dynNumReductions)
+// are in ScopFeaturesDynCount.cpp together with the instruction-group features.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,7 +19,6 @@
 #include "polly/ScopInfo.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/IR/Constants.h"
-#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Module.h"
 
 #ifdef POLLY_HAVE_BARVINOK
@@ -65,8 +60,7 @@ static isl::set buildArrayExtent(const ScopArrayInfo &SAI) {
 
 } // namespace
 
-Value *polly::features::footprintBytesIR(const Scop &S, IRBuilder<> &B,
-                                         Instruction * /*InsertBefore*/) {
+Value *polly::features::footprintBytesIR(const Scop &S, IRBuilder<> &B) {
   Type *I64 = B.getInt64Ty();
   Value *MinusOne = ConstantInt::get(I64, (uint64_t)-1LL);
 

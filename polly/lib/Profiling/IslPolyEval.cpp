@@ -195,4 +195,19 @@ Value *polly::evalUnionPwQpolynomialIR(isl_union_pw_qpolynomial *Upwqp,
   return Ctx.Total;
 }
 
+// ---------------------------------------------------------------------------
+// Public: evalScaledCardIR
+// ---------------------------------------------------------------------------
+
+Value *polly::evalScaledCardIR(isl_pw_qpolynomial *PwQp, int64_t N,
+                               DenseMap<isl_id *, Value *> &ParamMap,
+                               IRBuilder<> &B) {
+  Type *I64 = B.getInt64Ty();
+  Value *MinusOne = ConstantInt::get(I64, (uint64_t)-1LL);
+  Value *Card = evalPwQpolynomialIR(PwQp, ParamMap, B);
+  if (Card == MinusOne)
+    return MinusOne;
+  return B.CreateMul(ConstantInt::get(I64, N), Card);
+}
+
 #endif // POLLY_HAVE_BARVINOK

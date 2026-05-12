@@ -21,22 +21,12 @@
 using namespace llvm;
 using namespace polly;
 
-Value *polly::features::tripCountIR(const Scop &S, IRBuilder<> &B,
-                                    Instruction * /*InsertBefore*/) {
+Value *polly::features::tripCountIR(const Scop &S, IRBuilder<> &B) {
   Type *I64 = B.getInt64Ty();
   Value *MinusOne = ConstantInt::get(I64, (uint64_t)-1LL);
 
 #ifdef POLLY_HAVE_BARVINOK
-  DenseMap<isl_id *, Value *> IdToValue;
-  for (const SCEV *P : S.parameters()) {
-    isl::id Id = S.getIdForParam(P);
-    if (Id.is_null())
-      continue;
-    const auto *SU = dyn_cast<SCEVUnknown>(P);
-    if (!SU)
-      continue;
-    IdToValue[Id.release()] = SU->getValue();
-  }
+  DenseMap<isl_id *, Value *> IdToValue = features::buildParamMap(S);
 
   isl_union_pw_qpolynomial *Upwqp =
       isl_union_set_card(S.getDomains().release());

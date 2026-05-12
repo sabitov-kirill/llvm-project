@@ -4,15 +4,19 @@
 ;
 ; Expected feature vector (FeatureID order):
 ;   [0] TripCount    = N   (barvinok runtime expr; -1 without barvinok)
-;   [1] StmtCount    = 1
-;   [2] MaxLoopDepth = 1
-;   [3] NumParams    = 1   (N is a symbolic parameter)
-;   [4] NumArrays    = 1   (A)
-;   [5] NumDimensions = 1  (A is 1-D)
-;   [6] NumReads     = 0   (no array loads; %i is an IV scalar, not an array)
-;   [7] NumWrites    = 1   (store to A[i])
-;   [8] NumReductions = 0
-;   [9] MemFootprintBytes = runtime (N elements × 8 B) or -1
+;   [1] MemFootprintBytes = runtime (N elements × 8 B) or -1
+;   [2] StmtCount    = 1
+;   [3] MaxLoopDepth = 1
+;   [4] NumParams    = 1   (N is a symbolic parameter)
+;   [5] NumArrays    = 1   (A)
+;   [6] NumDimensions = 1  (A is 1-D)
+;   [7] DynNumReads     = runtime or -1   (no array loads, but barvinok still needed)
+;   [8] DynNumWrites    = runtime or -1   (1 write × card(domain))
+;   [9] DynNumReductions = runtime or -1
+;  [10] DynNumAluOps    = runtime or -1
+;  [11] DynNumMulDivOps = runtime or -1
+;  [12] DynNumFpOps     = runtime or -1
+;  [13] DynNumCfOps     = runtime or -1
 
 target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -34,22 +38,30 @@ return:
 }
 
 ; CHECK-LABEL: define void @f
-; CHECK:  %scop_feats{{[0-9]*}} = alloca [10 x i64]
+; CHECK:  %scop_feats{{[0-9]*}} = alloca [14 x i64]
 
 ; Slot 0: TripCount — runtime expression (barvinok) or -1; just verify a store exists.
 ; CHECK:  store i64 {{.*}}, ptr {{.*}}
 
-; Slots 1-8: all compile-time constants.
-; CHECK:  store i64 1, ptr {{.*}}
-; CHECK:  store i64 1, ptr {{.*}}
-; CHECK:  store i64 1, ptr {{.*}}
-; CHECK:  store i64 1, ptr {{.*}}
-; CHECK:  store i64 1, ptr {{.*}}
-; CHECK:  store i64 0, ptr {{.*}}
-; CHECK:  store i64 1, ptr {{.*}}
-; CHECK:  store i64 0, ptr {{.*}}
-
-; Slot 9: MemFootprintBytes — runtime or -1.
+; Slot 1: MemFootprintBytes — runtime or -1.
 ; CHECK:  store i64 {{.*}}, ptr {{.*}}
 
-; CHECK:  call void @__cas_scop_start(ptr {{.*}}, ptr {{.*}}, i64 10)
+; Slots 2-6: compile-time constants.
+; CHECK:  store i64 1, ptr {{.*}}
+; CHECK:  store i64 1, ptr {{.*}}
+; CHECK:  store i64 1, ptr {{.*}}
+; CHECK:  store i64 1, ptr {{.*}}
+; CHECK:  store i64 1, ptr {{.*}}
+
+; Slots 7-9: dynamic memory-access counts — runtime or -1.
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+
+; Slots 10-13: dynamic instruction-group counts — runtime or -1.
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+; CHECK:  store i64 {{.*}}, ptr {{.*}}
+
+; CHECK:  call void @__cas_scop_start(ptr {{.*}}, ptr {{.*}}, i64 14)

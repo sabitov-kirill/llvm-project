@@ -12,7 +12,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/IRBuilder.h"
 
-
 namespace llvm {
 class Instruction;
 class Value;
@@ -22,20 +21,24 @@ namespace polly {
 
 class Scop;
 
-/// Fixed ABI: append only.  Index == position in the features[] array passed
-/// to __cas_scop_start at runtime.
 enum class FeatureID : unsigned {
-  TripCount    = 0, // Ehrhart polynomial via barvinok; -1 if unavailable
-  StmtCount    = 1, // S.getSize()
-  MaxLoopDepth = 2, // S.getMaxLoopDepth()
-  NumParams    = 3, // S.getNumParams()
-  NumArrays    = 4, // count(S.arrays())
-  NumDimensions = 5, // sum of SAI->getNumberOfDimensions() over all arrays
-  NumReads     = 6, // count MA->isRead() across all stmts
-  NumWrites    = 7, // count MA->isWrite() across all stmts
-  NumReductions     = 8, // count MA->isReductionLike() across all stmts
-  MemFootprintBytes = 9, // union of all array access ranges × element size; -1 if unavailable
-  NUM_FEATURES      = 10
+  // clang-format off
+  TripCount         = 0,  // Ehrhart polynomial via barvinok; -1 if unavailable
+  MemFootprintBytes = 1,  // union of all array access ranges * element size; -1 if unavailable
+  StmtCount         = 2,  // S.getSize()
+  MaxLoopDepth      = 3,  // S.getMaxLoopDepth()
+  NumParams         = 4,  // S.getNumParams()
+  NumArrays         = 5,  // count(S.arrays())
+  NumDimensions     = 6,  // sum of SAI->getNumberOfDimensions() over all arrays
+  NumReads          = 7,  // sum_stmt(reads_in_stmt * card(domain)); -1 if unavailable
+  NumWrites         = 8,  // sum_stmt(writes_in_stmt * card(domain)); -1 if unavailable
+  NumReductions     = 9,  // sum_stmt(reductions_in_stmt * card(domain)); -1 if unavailable
+  NumAluOps         = 10, // sum_stmt(alu_insts * card(domain)); -1 if unavailable
+  NumMulDivOps      = 11, // sum_stmt(muldiv_insts * card(domain)); -1 if unavailable
+  NumFpOps          = 12, // sum_stmt(fp_insts * card(domain)); -1 if unavailable
+  NumCfOps          = 13, // sum_stmt(cf_insts * card(domain)); -1 if unavailable
+  NUM_FEATURES      = 14
+  // clang-format on
 };
 
 constexpr unsigned NumScopFeatures =
@@ -50,9 +53,7 @@ constexpr unsigned NumScopFeatures =
 ///
 /// The caller must set B's insert point before calling this function.
 llvm::SmallVector<llvm::Value *, NumScopFeatures>
-computeScopFeaturesIR(const Scop &S, llvm::IRBuilder<> &B,
-                      llvm::Instruction *InsertBefore);
-
+computeScopFeaturesIR(const Scop &S, llvm::IRBuilder<> &B);
 
 } // namespace polly
 

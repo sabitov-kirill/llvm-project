@@ -52,6 +52,17 @@ evalUnionPwQpolynomialIR(isl_union_pw_qpolynomial *Upwqp,
                          llvm::DenseMap<isl_id *, llvm::Value *> &ParamMap,
                          llvm::IRBuilder<> &B);
 
+/// Compute N * card(\p PwQp) as an LLVM IR i64 Value.
+///
+/// Convenience wrapper used by dynamic instruction-count features:
+///   Contrib = static_count_in_stmt * card(iteration_domain_of_stmt)
+///
+/// Returns ConstantInt(-1) if evalPwQpolynomialIR fails for \p PwQp.
+/// Does NOT take ownership of \p PwQp.
+llvm::Value *evalScaledCardIR(isl_pw_qpolynomial *PwQp, int64_t N,
+                              llvm::DenseMap<isl_id *, llvm::Value *> &ParamMap,
+                              llvm::IRBuilder<> &B);
+
 #endif // POLLY_HAVE_BARVINOK
 
 } // namespace polly

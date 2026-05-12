@@ -15,28 +15,34 @@
 #include "ScopFeaturesImpl.h"
 #include "polly/ScopInfo.h"
 #include "llvm/IR/Constants.h"
-#include "llvm/IR/Type.h"
 
 using namespace llvm;
 using namespace polly;
 
 SmallVector<Value *, NumScopFeatures>
-polly::computeScopFeaturesIR(const Scop &S, IRBuilder<> &B,
-                             Instruction *InsertBefore) {
+polly::computeScopFeaturesIR(const Scop &S, IRBuilder<> &B) {
   using namespace polly::features;
   Type *I64 = B.getInt64Ty();
-  auto C = [&](int64_t v) -> Value * { return ConstantInt::get(I64, v); };
+  auto C = [&](int64_t V) { return ConstantInt::get(I64, V); };
 
-  return {
-    /* TripCount          */ tripCountIR(S, B, InsertBefore),
-    /* StmtCount          */ C(stmtCount(S)),
-    /* MaxLoopDepth       */ C(maxLoopDepth(S)),
-    /* NumParams          */ C(numParams(S)),
-    /* NumArrays          */ C(numArrays(S)),
-    /* NumDimensions      */ C(numDimensions(S)),
-    /* NumReads           */ C(numReads(S)),
-    /* NumWrites          */ C(numWrites(S)),
-    /* NumReductions      */ C(numReductions(S)),
-    /* MemFootprintBytes  */ footprintBytesIR(S, B, InsertBefore),
+  SmallVector<Value *, NumScopFeatures> Features(NumScopFeatures);
+  auto At = [&](FeatureID ID) -> Value *& {
+    return Features[static_cast<unsigned>(ID)];
   };
+
+  At(FeatureID::TripCount) = tripCountIR(S, B);
+  At(FeatureID::MemFootprintBytes) = footprintBytesIR(S, B);
+  At(FeatureID::StmtCount) = C(stmtCount(S));
+  At(FeatureID::MaxLoopDepth) = C(maxLoopDepth(S));
+  At(FeatureID::NumParams) = C(numParams(S));
+  At(FeatureID::NumArrays) = C(numArrays(S));
+  At(FeatureID::NumDimensions) = C(numDimensions(S));
+  At(FeatureID::NumReads) = numReadsIR(S, B);
+  At(FeatureID::NumWrites) = numWritesIR(S, B);
+  At(FeatureID::NumReductions) = numReductionsIR(S, B);
+  At(FeatureID::NumAluOps) = numAluOpsIR(S, B);
+  At(FeatureID::NumMulDivOps) = numMulDivOpsIR(S, B);
+  At(FeatureID::NumFpOps) = numFpOpsIR(S, B);
+  At(FeatureID::NumCfOps) = numCfOpsIR(S, B);
+  return Features;
 }

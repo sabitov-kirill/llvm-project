@@ -144,7 +144,7 @@ void ScopProfiler::insertScopStart(Instruction *InsertBefore) {
                      << "\n");
 
   Builder.SetInsertPoint(InsertBefore->getIterator());
-  auto FVals = computeScopFeaturesIR(S, Builder, InsertBefore);
+  auto FVals = computeScopFeaturesIR(S, Builder);
 
   // Alloca at function entry so the array doesn't grow on every loop iteration.
   IRBuilder<> AllocaB(
