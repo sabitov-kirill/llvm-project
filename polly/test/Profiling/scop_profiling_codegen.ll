@@ -7,8 +7,10 @@
 ;   - allocate a [14 x i64] features array at function entry
 ;   - in the optimized path (polly.start): call __cas_scop_start with ":opt" ID
 ;   - in polly.exiting:                   call __cas_scop_end  with ":opt" ID
-;   - in the fallback entry block (%next): call __cas_scop_start with ":orig" ID
-;   - in the unique fallback exiting block: call __cas_scop_end with ":orig" ID
+;   - in the pre-entry block (%next.pre_entry_bb): call __cas_scop_start with ":orig" ID
+;     (this block is visited exactly once on the fallback path, before the loop header)
+;   - in the split exit block (%return.region_exiting.split): call __cas_scop_end with ":orig" ID
+;     (this block is visited exactly once as the fallback path exits the SCoP region)
 ;   - declare (but not define) __cas_scop_start / __cas_scop_end
 
 ; void f(long *A, long N) {
@@ -47,9 +49,9 @@ return:
 ; Fallback blocks appear before polly.* blocks in the output IR.
 ; CHECK-LABEL: define void @f
 ; CHECK:         %scop_feats{{[0-9]*}} = alloca [14 x i64]
-; CHECK-LABEL: next:
+; CHECK-LABEL: next.pre_entry_bb:
 ; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig", ptr {{.*}}, i64 14)
-; CHECK-LABEL: return.region_exiting:
+; CHECK-LABEL: polly.orig.region_exiting:
 ; CHECK-NEXT:    call void @__cas_scop_end(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_orig")
 ; CHECK-LABEL: polly.start:
 ; CHECK:         call void @__cas_scop_start(ptr @"__cas_scop_id_f_%next_%polly.merge_new_and_old_opt", ptr {{.*}}, i64 14)

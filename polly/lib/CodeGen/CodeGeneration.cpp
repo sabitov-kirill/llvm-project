@@ -39,6 +39,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "isl/ast.h"
 #include <cassert>
@@ -253,8 +254,22 @@ static bool generateCode(Scop &S, IslAstInfo &AI, LoopInfo &LI,
     if (BasicBlock *ExitingBB = S.getExitingBlock()) {
       ScopProfiler P(S, Mod, "orig");
       P.initialize();
-      P.insertScopStart(&*S.getEntry()->getFirstNonPHIIt());
-      P.insertScopEnd(ExitingBB->getTerminator());
+
+      // Instead of S.getEntry() (loop header, fires N times):
+      // Use the pre_entry_bb — find it as the non-StartBlock successor of
+      // SplitBlock
+      BasicBlock *PreEntryBB = SplitBlock->getTerminator()->getSuccessor(1);
+      P.insertScopStart(&*PreEntryBB->getFirstNonPHIIt());
+
+      // Instead of ExitingBB->getTerminator() (loop latch, fires N times):
+      // Split the specific exit edge ExitingBB → S.getExit() (which is
+      // MergeBlock after executeScopConditionally replaces the region exit).
+      // ExitingBB has two successors (back-edge + exit), so getUniqueSuccessor()
+      // would return nullptr — we must name the target explicitly.
+      BasicBlock *OrigExitBB =
+          SplitEdge(ExitingBB, S.getExit(), &DT, &LI, nullptr,
+                    "polly.orig.region_exiting");
+      P.insertScopEnd(OrigExitBB->getTerminator());
     }
   }
 
